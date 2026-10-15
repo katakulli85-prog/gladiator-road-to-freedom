@@ -1,0 +1,55 @@
+name: "1) Aktivasyon Dosyasi Uret (.alf)"
+
+on:
+  workflow_dispatch:
+
+env:
+  UNITY_IMAGE: unityci/editor:ubuntu-2022.3.55f1-android-3
+
+jobs:
+  request-activation-file:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Aktivasyon dosyasi uretiliyor
+        run: |
+          set -e
+          OUT="$RUNNER_TEMP/alf"
+          mkdir -p "$OUT"
+          echo "Imaj indiriliyor: $UNITY_IMAGE (ilk seferde 3-6 dk)"
+          docker pull "$UNITY_IMAGE"
+          docker run --rm \
+            -v "$OUT:/output" \
+            -w /output \
+            "$UNITY_IMAGE" \
+            -batchmode -nographics -quit \
+            -createManualActivationFile \
+            -logFile /output/unity.log
+          ls -la "$OUT"
+          if ! compgen -G "$OUT/*.alf" > /dev/null; then
+            echo "::error::.alf uretilemedi. unity.log son satirlari:"
+            tail -n 50 "$OUT/unity.log" || true
+            exit 1
+          fi
+
+      - name: .alf artifact olarak yukle
+        uses: actions/upload-artifact@v4
+        with:
+          name: Unity_ActivationFile
+          path: ${{ runner.temp }}/alf/*.alf
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Talimatlari ozete yaz
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
+          ## Aktivasyon adimlari (telefondan)
+          1. Bu sayfanin ustundeki Artifacts bolumunden Unity_ActivationFile dosyasini indir, .alf dosyasini cikar.
+          2. Tarayicida license.unity3d.com/manual adresine git, Unity hesabinla gir.
+          3. Browse ile .alf dosyasini sec -> NEXT -> .ulf dosyasi iner.
+          4. .ulf dosyasini metin olarak ac, TUM icerigi kopyala.
+          5. GitHub -> depo -> Settings -> Secrets and variables -> Actions -> New repository secret
+             - Name: UNITY_LICENSE
+             - Secret: kopyaladigin .ulf icerigi (baska hicbir sey ekleme).
+          6. Sonra "2) Android APK Derle" is akisini elle calistir.
+          UYARI: .ulf gizli belgedir; depoya commit ETME, kimseyle paylasma.
+          SUMMARY

@@ -1,0 +1,29 @@
+# Unity uretim dosyalari
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+sysinfo.txt
+
+# IDE ve OS
+.vs/
+.idea/
+*.csproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pdb
+*.mdb
+.DS_Store
+Thumbs.db
+
+# Unity diger
+/[Aa]ssets/AssetStoreTools*
+*.stackdump
+*.pidb.meta
