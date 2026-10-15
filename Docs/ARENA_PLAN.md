@@ -1,0 +1,5 @@
+# ARENA PLANI (kayıt)
+10 bölge: 1 Roma (Kolezyum, mermer, kum, meşale); 2 Mısır (piramit gölgesi, tapınak, altın, çöl); 3 Türk-Hun bozkırı (otağ, taş heykel, gün batımı); 4 Çin (saray, kırmızı sütun, ejderha, taş avlu); 5 Feodal Japonya (kale, bambu, kiraz, sis); 6 İstanbul/Bizans (surlar, avlu, Boğaz); 7 İnka (And zirvesi, teras, güneş tapınağı, uçurum); 8 Afrika (taş yapılar, savan, baobab); 9 Yunan (mermer stadyum, deniz); 10 Pers/Mezopotamya/Kuzey Afrika/Orta Asya.
+Dağıtım: her 10'da yeni bölge; her 10. seviye özel boss arenası; 100. seviye = bozkır finali (sancaklar, dağlar, rüzgâr bayrakları, dramatik gün batımı).
+Sistem: bölge kiti (10 mimari kit) × düzen varyantı (3) × atmosfer profili (3-4: gün batımı/fırtına/sis/öğle) × dekor seti ≈ 100 "farklı hissettiren" alan; renk kopyası yasak.
+Teknik: sahnelere KODLA kurulur (Editor/Generators + veri tablosu); "oynanabilir 3D arena şart, konsept resim değil"; varlık kaynağı CC0 önceliği (PolyHaven/Quaternius/Kenney) + lisans kaydı zorunlu; LOD, billboard seyirci, object pooling, tek ana ışık+lokal meşale; yağmur/sis düşük maliyetli partikül. Desteklenmeyen özellik ayarlarda gizlenir; "varmış gibi" yok.

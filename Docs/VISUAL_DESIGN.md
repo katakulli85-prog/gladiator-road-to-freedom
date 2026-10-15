@@ -1,0 +1,7 @@
+# GÖRSEL TASARIM SİSTEMİ (kayıt)
+Hedef: gerçekçi, karanlık, sinematik 3D; çizgi film YOK. Mimari: ORTAK İSKELET + katmanlı kimlik (5-6 yüz kalıbı+morph, 4 lokomasyon stili: ağır/normal/çevik/mağrur, kemikli pelerin 2-3 kemik, duruş+ses ifadeleri) — renk kopyası görünümü yasak.
+Oyuncu: kaslı/atletik gövde, farklı yüz; saç/sakal seçenekleri; deri kayış+metal; savaş izleri. Kadın: gerçekçi atletik anatomi, örgü/at kuyruğu, metal göğüs koruması. Premium kadınlar: dengeli stil farkı, zorunlu avantaj yok.
+Türk savaşçılar: Alp Arslan (uzun koyu saç, bıyık, eğri kılıç+balta), Börü Han (heybetli, örgülü sakal, kurt figürlü miğfer, ağır kılıç+balta), Kürşad (çevik, hızlı karşı atak), Demir Tegin (örgülü saç, bronz-çelik, kılıç+kalkan).
+Düşman 10 kademe görsel ilerlemesi (1-10 basit deri → 91-99 benzersiz zırh+özel giriş animasyonları). Boss görselleri eşsiz (Arena Celladı büyük balta; Demir Muhafız ağır zırh+kalkan; Kanlı Şampiyon kırmızı; Kara Kalkan; Arena'nın Kasabı iri+ürkütücü miğfer; Kızıl General pelerin; Kırılmaz/Yenilmez; Gölge Cellat kapalı miğfer; İmparatorun Şampiyonu altın; Börü Han en ayrıntılı).
+Börü Han 100. savaş: sinematik giriş kamerası; zırh hasar katmanları (temiz→çizik→ağır, 3 aşama materyal); yenilince özgürlük final sahnesi.
+Malzeme gerçekçiliği: cilt, göz, saç/sakal; metal/deri/kumaş/ahşap dokular; ter/toz/kir/savaş izleri; yönlü tepki animasyonları; kıvılcım+metal sesi; LOD (yakın detay/uzak sade).

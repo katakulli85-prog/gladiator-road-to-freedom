@@ -1,0 +1,7 @@
+# EKİPMAN SİSTEMİ (kayıt)
+## Silahlar (12): Gladius; Uzun kılıç; Çift kılıç; Mızrak; Üç dişli trident; Savaş baltası; Çift elli balta; Savaş çekici; Hançer; Zincirli silah; Kılıç+kalkan; Çift elli ağır kılıç.
+Her silah alanları: hasar, saldırı hızı, menzil, ağırlık, dayanıklılık, zırh delme, kritik şansı, sendeletme, özel hareketler/kombolar, model+ses.
+## Savunma: yuvarlak kalkan; dikdörtgen Roma kalkanı; el kalkanı; miğfer; göğüs zırhı; zincir zırh; plaka zırh; kol koruyucu; bacak koruyucu; omuz zırhı; deri zırh; tam set kombinasyonları. Yuvalar: miğfer/göğüs/omuz/kol/bacak/eldiven/kalkan/kemer. Giyilenler 3D modelde GÖRÜNÜR.
+## Nadirlik (5): Sıradan, Kaliteli, Nadir, Epik, Efsanevi. Nadirlik ≠ her zaman üstün; bazı sıradanlar belirli tarzlarda iyi. Efsanevi: özel görünüm/efekt/pasif; yalnız gerçek oyun içi koşulla.
+## Denge: ağır=güçlü+yavaş; hafif=hızlı+düşük hasar. Efsanevi üst sınır ≈ tam geliştirilmiş normalin %10-15 üstü (onay bekliyor). Güç-parite: her premium eşdeğeri ücretsiz yolla ulaşılabilir; hiçbir içerik paraya özel değil. Kapasite yükseltmesi ödeme duvarı olamaz. Geliştirme sonucu önceden belirtilir (rastgele kayıp yok). Dayanıklılık/onarım sistemi 1.0'da kapalı başlama önerisi (Faz 9 kararı).
+## Üretim/geliştirme: 9 malzeme (demir/çelik, bronz, deri, kumaş, ahşap, metal parça, nadir alaşım, usta işçiliği, boss ödülleri); tarifler veri odaklı (kimlik, malzeme, para, çıktı, açılma koşulu, geliştirme sınırı); üretim ATOMİK işlem (yarım durum yasak, çoğaltma engelli); demirhane tek arayüz; 1-100 denge tablosu CI simülasyon girdisi.

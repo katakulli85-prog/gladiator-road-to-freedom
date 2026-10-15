@@ -1,64 +1,43 @@
-# GLADIATOR: ROAD TO FREEDOM — PROJECT BRIEF
+# GLADIATOR: ROAD TO FREEDOM — PROJECT BRIEF (v2)
 
-Bu dosya projenin tek dogruluk kaynağidir. Yeni bir sohbet oturumu açtığında bu dosyanın tamamını yapay zekâya yapıştır.
+Projenin tek dogruluk kaynağı. Yeni oturumda bu dosyayı yapay zekâya yapıştır.
 
-## 1. Kimlik
-- Depo: katakulli85-prog/gladiator-road-to-freedom (PRIVATE)
-- Platform: Android (öncelik); mimari iOS'a hazır tutulacak
-- Çevrimdışı, tek oyunculu; oyuncu 100 savaş kazanarak özgürlüğe ulaşır
-- Özgün hikâye ve karakterler; başka oyunlardan içerik kopyalanmaz
-- Geliştirme ortamı: Android telefon + tarayıcı (Codespaces) + GitHub Actions (bulut derleme)
+## Kimlik
+- Depo: katakulli85-prog/gladiator-road-to-freedom (PRIVATE, dal: main)
+- Android öncelik; iOS'a hazır mimari. Çevrimdışı tek oyunculu. 100 savaş = özgürlük.
+- Geliştirme: telefon tarayıcısı + GitHub Actions (bulut derleme). Maliyet hedefi 0 $ (ücretli adım = önce onay).
 
-## 2. Değişmez kurallar
-- Maliyet hedefi 0 $; ücretli her adım için önce kullanıcı onayı
-- Gizli bilgiler (lisans, şifre, anahtar) yalnız GitHub Secrets'ta; koda ve repoya girmez
-- main dalı her zaman derlenebilir olmalı
-- Test edilmeyen hiçbir özellik "tamamlanmış" sayılmaz
-- Her teslimat TEK bütünleşik bloktur; kullanıcı terminali tek yapıştırma + tek komutla çalıştırır
-- Her aşama çıkışında çalışan, kurulabilir bir sürüm vardır
+## Değimez kurallar
+- Gizli bilgiler yalnız GitHub Secrets'ta; koda/repoya/sohbete girmez.
+- main her zaman derlenebilir. Test edilmeyen özellik "tamamlanmış" sayılmaz.
+- Teslimatlar tek bütünleşik blok; Codespaces'te Chrome çevirisi KAPALI.
+- Özgün içerik; hiçbir mevcut dizi/oyundan kopya yok.
+- Görsel hedef: sinematik stilize realizm (fotogerçekçi değil). Kalite > boyut.
 
-## 3. Teknik kararlar (Kutu 3 itibarıyla)
+## Teknik kararlar
 | Konu | Karar |
 |---|---|
-| Unity sürümü | 2022.3.55f1 (ProjectVersion.txt ve iş akışlarında sabit) |
-| Derleme hattı | GitHub Actions + GameCI (unity-builder v4), Docker imajı: unityci/editor:ubuntu-2022.3.55f1-android-3 |
-| Render | Built-in pipeline (geçici) → URP ileride eklenecek |
-| Script backend | Mono (geçici) → IL2CPP ileride |
-| Sahne üretimi | Kodla: Assets/Editor/Bootstrap.cs (BuildCommand.PerformBuild) |
-| APK çıktısı | build/Android/Android.apk → artifact (14 gün) |
-| Kalıcı sürüm | GitHub Releases (APK + proje ZIP) |
-| Android ayarları | minSdk 24, ARMv7+ARM64, yatay ekran, paket: com.katakulli85prog.gladiatorrtf |
-| Sürüm sabitleme | ProjectVersion.txt + manifest.json + workflow env (üçü birlikte) |
+| Unity | 2022.3.55f1 (sabit), imaj unityci/editor:ubuntu-2022.3.55f1-android-3 |
+| APK ayarları | minSdk 24, ARMv7+ARM64, yatay ekran, paket com.katakulli85prog.gladiatorrtf |
+| Sahne/arena üretimi | Editor/Generators kod script'leri (Unity Editor telefonda yok) |
+| Render/IL2CPP/URP | Geçişli: şimdilik built-in+Mono; URP+IL2CPP Faz 11 öncesi |
 
-## 4. Kutu ilerlemesi (Faz 0 — teknik deneme)
-- [x] Kutu 1: Depo kontrolü (private, yalnız README, dal: main)
-- [x] Kutu 2: Unity hesabı (ücretsiz Personal)
-- [ ] Kutu 3: Proje iskeleti + iki iş akışı (bu commit)
-- [ ] Kutu 4: activation iş akışını elle çalıştır → .alf artifact'i
-- [ ] Kutu 5: license.unity3d.com/manual ile .alf → .ulf
-- [ ] Kutu 6: .ulf içeriği → UNITY_LICENSE secret
-- [ ] Kutu 7: build-android iş akışı ilk koşu (lisans bulutta doğrulanır, ilk APK)
-- [ ] Kutu 8: APK'yı telefona kur, test ekranını gör, fotoğraf kanıtı
-- [ ] Kutu 9: İkinci koşu (tekrarlanabilirlik) + dakika/süre ölçüm raporu
-- [ ] Kutu 10: v0.1 etiketi + GitHub Release (APK kalıcı) + Faz 0 raporu
+## Kutu ilerlemesi (Faz 0)
+- [x] Kutu 1 depo kontrolü · [x] Kutu 2 Unity hesabı · [x] Kutu 3 iskelet (614c5f9)
+- [x] Kutu 4 .alf üretimi YEŞİL (deneme #7, 6 dk; çözülen: disk doldu, Unity yolu, donma→canlı log+15 dk tavan)
+- [ ] Kutu 5 .alf→.ulf (license.unity3d.com/manual) — .alf artifact 14 gün geçerli!
+- [ ] Kutu 6 UNITY_LICENSE secret · [ ] Kutu 7 ilk APK · [ ] Kutu 8 cihaz kurulumu
+- [ ] Kutu 9 tekrar koşusu + dakika raporu · [ ] Kutu 10 v0.1 Release (APK+ZIP)
 
-Faz 0 başarı kriteri: Kutu 9'daki iki yeşil koşu + APK'nın telefonda açılması + ölçüm raporu.
-Faz 0 başarısız olursa: halka, log ve çözüm seçenekleri raporlanır; oyun geliştirmeye geçilmez.
+## Faz planı (özet)
+0 hat kanıtı → 3 menü+akış → 4-5 hareket/kamera/kontroller(+haptik temel) → 6 dövüş çekirdeği → 7 AI → 8 arena+ilk 10 savaş(+eğitim) → 9 envanter/ekonomi/kayıt v1 → 10 100 savaş+boss'lar+hikâye → 11 görsel/ses/performans(URP,ekran profilleri) → 12 kayıt sağlamlaştırma → 13 IAP+yayın APK(Play 25 $ onaylı, ödeme adımında teyit) → 14 v1.0 teslim.
 
-## 5. 14 aşamalık yol haritası (özet)
-1. Tasarım belgesi + teknik fizibilite (Faz 0 = bu kutular)
-2. Proje yapısı + Unity mimarisi
-3. Ana menü ve oyun akışı
-4. Hareket + kamera
-5. Mobil kontroller (saldırı/ağır/blok/kaçınma/kilit)
-6. Dövüş mekanikleri (hasar, stamina, hit-stop)
-7. Düşman yapay zekâsı
-8. İlk arena + ilk 10 savaş
-9. Silah, zırh, altın, mağaza, kayıt v1
-10. 100 savaşa genişleme (veri tablosu + denge simülasyonu)
-11. Görsel (URP), ses, performans
-12. Kayıt sağlamlaştırma + hata düzeltme
-13. Yayın APK'sı (imzalı) + gerçek cihaz testleri
-14. Son kontrol, v1.0 teslimat (Release: APK + ZIP)
+## Doküman indeksi (Docs/)
+EQUIPMENT_PLAN, ENEMY_PLAN, CHARACTER_ROSTER, VISUAL_DESIGN, ARENA_PLAN, COMBAT_SPEC,
+SCREEN_SETTINGS, FIRST_LAUNCH_FLOW, ITEM_INVENTORY_DESIGN, ECONOMY_IAP_DESIGN,
+PRODUCTION_UPGRADE_DESIGN, QUESTS_REWARDS_DESIGN, DEFEAT_RETRY_DESIGN,
+STORY_CINEMATIC_DESIGN, ACCESSIBILITY_DESIGN, SAVE_DATA_SECURITY,
+PERFORMANCE_QA_PLAN, APK_DELIVERY_PLAN. (Not: bu kayıtlar sohbetteki orijinal belgelerin karar bütünlüğünü koruyan özetleridir.)
 
-Her aşama çıkışı: etiket + Release + CHANGELOG + bu dosyanın ilerleme bölümünün güncellenmesi.
+## Açık kararlar (bekliyor)
+Börü Han premium-vs-final çakışması; boss70 "Kırılmaz" adı; İnka/Japonya "efsane seferi" kurgusu; efsanevi makası ~%10-15; dayanıklılık 1.0'da kapalı önerisi; Release'lerde APK+ZIP politikası; test telefonu modeli bilinmiyor.
