@@ -1,9 +1,3 @@
-set -e
-echo "== KUTU 3.5: DISK DUZELTMESI BASLIYOR =="
-cd /workspaces/gladiator-road-to-freedom
-git pull --ff-only
-
-cat > .github/workflows/activation.yml <<'EOF_ACT'
 name: "1) Aktivasyon Dosyasi Uret (.alf)"
 
 on:
@@ -21,9 +15,7 @@ jobs:
           echo "ONCE:"; df -h / | tail -1
           sudo swapoff -a || true
           sudo rm -f /swapfile
-          sudo rm -rf /usr/share/dotnet /usr/share/swift /usr/share/miniconda \
-            /usr/local/lib/android /opt/ghc /usr/local/share/boost /usr/lib/jvm \
-            /opt/hostedtoolcache 2>/dev/null || true
+          sudo rm -rf /usr/share/dotnet /usr/share/swift /usr/share/miniconda /usr/local/lib/android /opt/ghc /usr/local/share/boost /usr/lib/jvm /opt/hostedtoolcache 2>/dev/null || true
           sudo docker image prune -af >/dev/null 2>&1 || true
           sudo apt-get clean >/dev/null 2>&1 || true
           echo "SONRA:"; df -h / | tail -1
@@ -35,13 +27,7 @@ jobs:
           mkdir -p "$OUT"
           echo "Imaj indiriliyor: $UNITY_IMAGE (ilk seferde 3-6 dk)"
           docker pull "$UNITY_IMAGE"
-          docker run --rm \
-            -v "$OUT:/output" \
-            -w /output \
-            "$UNITY_IMAGE" \
-            -batchmode -nographics -quit \
-            -createManualActivationFile \
-            -logFile /output/unity.log
+          docker run --rm -v "$OUT:/output" -w /output "$UNITY_IMAGE" -batchmode -nographics -quit -createManualActivationFile -logFile /output/unity.log
           ls -la "$OUT"
           if ! compgen -G "$OUT/*.alf" > /dev/null; then
             echo "::error::.alf uretilemedi. unity.log son satirlari:"
@@ -71,98 +57,3 @@ jobs:
           6. Sonra "2) Android APK Derle" is akisini elle calistir.
           UYARI: .ulf gizli belgedir; depoya commit ETME, kimseyle paylasma.
           SUMMARY
-EOF_ACT
-
-cat > .github/workflows/build-android.yml <<'EOF_BUILD'
-name: "2) Android APK Derle"
-
-on:
-  workflow_dispatch:
-
-env:
-  UNITY_VERSION: 2022.3.55f1
-  UNITY_IMAGE: unityci/editor:ubuntu-2022.3.55f1-android-3
-
-jobs:
-  license-gate:
-    name: Lisans kontrolu
-    runs-on: ubuntu-latest
-    outputs:
-      licensed: ${{ steps.gate.outputs.licensed }}
-    steps:
-      - id: gate
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-        run: |
-          if [ -z "$UNITY_LICENSE" ]; then
-            echo "licensed=no" >> "$GITHUB_OUTPUT"
-            echo "UNITY_LICENSE secret yok. Once '1) Aktivasyon Dosyasi Uret' is akisini calistir (Kutu 4-6)."
-          else
-            echo "licensed=yes" >> "$GITHUB_OUTPUT"
-          fi
-
-  build:
-    name: APK derle
-    needs: license-gate
-    if: needs.license-gate.outputs.licensed == 'yes'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Disk boslugu ac
-        run: |
-          echo "ONCE:"; df -h / | tail -1
-          sudo swapoff -a || true
-          sudo rm -f /swapfile
-          sudo rm -rf /usr/share/dotnet /usr/share/swift /usr/share/miniconda \
-            /usr/local/lib/android /opt/ghc /usr/local/share/boost /usr/lib/jvm \
-            /opt/hostedtoolcache 2>/dev/null || true
-          sudo docker image prune -af >/dev/null 2>&1 || true
-          sudo apt-get clean >/dev/null 2>&1 || true
-          echo "SONRA:"; df -h / | tail -1
-
-      - name: Depoyu al
-        uses: actions/checkout@v4
-
-      - name: Unity ile derle (GameCI)
-        uses: game-ci/unity-builder@v4
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-        with:
-          targetPlatform: Android
-          unityVersion: ${{ env.UNITY_VERSION }}
-          customImage: ${{ env.UNITY_IMAGE }}
-          projectPath: .
-          buildName: Android
-          buildsPath: build
-          buildVersion: 0.1.0
-          buildMethod: BuildCommand.PerformBuild
-          androidExportType: android-package
-
-      - name: APK artifact yukle
-        uses: actions/upload-artifact@v4
-        with:
-          name: gladiator-android-apk
-          path: build/Android/*.apk
-          retention-days: 14
-          if-no-files-found: error
-
-      - name: Ozet
-        run: |
-          echo "## APK hazir" >> "$GITHUB_STEP_SUMMARY"
-          ls -lh build/Android/ >> "$GITHUB_STEP_SUMMARY" || true
-EOF_BUILD
-
-sed -i 's/- \[ \] Kutu 3:/- [x] Kutu 3:/' Docs/PROJECT_BRIEF.md || true
-cat >> Docs/PROJECT_BRIEF.md <<'EOF_LOG'
-
-## 6. Olay kaydi
-- Kutu 4 ilk deneme: "no space left on device" (disk doldu) hatasi alindi.
-- Cozum: iki is akisina da en basta disk temizleme adimi eklendi (swap + onkurulumlar silinir, ~30-40 GB acilir).
-- Ikinci deneme beklemede; yine disk hatasi verirse daha kapsamli temizlik (Plan B) uygulanacak.
-EOF_LOG
-
-grep -q "Disk boslugu ac" .github/workflows/activation.yml && grep -q "Disk boslugu ac" .github/workflows/build-android.yml && echo "--- DOGRULAMA OK ---" || { echo "--- DOGRULAMA HATA, COMMIT YAPILMADI ---"; exit 1; }
-wc -c .github/workflows/activation.yml .github/workflows/build-android.yml
-git add .github/workflows/activation.yml .github/workflows/build-android.yml Docs/PROJECT_BRIEF.md
-git commit -m "Kutu 4 onarim: is akislarina disk temizleme adimi (no space left cozumu)" || echo "Commit atlandi (degisiklik yok)"
-git push
-echo "== BITTI: kodlar GitHub'a gitti. Codespace'i durdur, Actions'ta is akisini yeniden calistir. =="
