@@ -25,9 +25,9 @@ jobs:
           set -e
           OUT="$RUNNER_TEMP/alf"
           mkdir -p "$OUT"
-          echo "Imaj indiriliyor: $UNITY_IMAGE (ilk seferde 3-6 dk)"
+          echo "Imaj indiriliyor: $UNITY_IMAGE"
           docker pull "$UNITY_IMAGE"
-          docker run --rm -v "$OUT:/output" -w /output "$UNITY_IMAGE" -batchmode -nographics -quit -createManualActivationFile -logFile /output/unity.log
+          docker run --rm -v "$OUT:/output" -w /output "$UNITY_IMAGE" bash -c "xvfb-run -ae /dev/stdout /opt/unity/Editor/Unity -batchmode -nographics -quit -createManualActivationFile -logFile /output/unity.log"
           ls -la "$OUT"
           if ! compgen -G "$OUT/*.alf" > /dev/null; then
             echo "::error::.alf uretilemedi. unity.log son satirlari:"
