@@ -1,0 +1,13 @@
+# EŞYA VE ENVANTER (kayıt)
+## Silah kategorileri (10): tek elli; çift elli ağır; gladius/kısa; mızrak/uzun saplı; çift silah; balta; savaş çekici; hançer; kalkanla kullanılan; kültürel tematik. Her silah 10 alan (bkz EQUIPMENT_PLAN).
+## Zırh yuvaları (8): miğfer/göğüs/omuz/kol/bacak/eldiven/kalkan/kemer. Ağır=koruma↑çeviklik↓; hafif tersi; kalkan blok kapasitesi+dayanıklılık+özel koruma. Giyilen 3D'de görünür (yalnız stat ekipman temel sistem olamaz).
+## Nadirlik (5): sıradan→efsanevi; nadirlik≠her zaman üstün; efsanevi = özel görünüm+pasif; yalnız gerçek oyun içi koşulla; "henüz yok"→"var" gösterilemez.
+## Envanter ekranı: kategori filtre; ad/nadirlik sıralama; karşılaştırma (hasar/savunma/hız/ağırlık farkları açık); kuşan/çıkar; detay; kullanılabilirler; yeni işaret; favori; satılabilir ayrımı; geliştirme seviyesi; sayı. Kilitleme+satış onayı (yanlış satış yasak). Kapasite varsa başlangıç yeterli; yükseltme ödeme duvarı değil.
+## Tüketilebilir: can; dayanıklılık; geçici savunma/saldırı buff; özel savaş eşyası. Koşul/etki/süre/miktar açık; boss kullanım kuralları önceden tanımlı; savaş içi hızlı slot (menüde kaybolma yasak).
+## Geliştirme: maliyet+malzeme göster; önce/sonra karşılaştır; başarıda güncelle; görsel değişim varsa göster; silah başına maksimum seviye; maliyet dengeli artar; rastgele kayıp YASAK (sonuç önceden belirtilir).
+## Elde etme: savaş ödülü; boss/şampiyon ödülü; görev; başarım; mağaza; nadir karşılaşma; ilerleme aşaması. "Nereden bulunur" açık gösterilir; rastgele ödül oranları şeffaf; gerçek para zorunluluğu yok.
+## Dayanıklılık sistemi: şartlı — mantıklı azalma; gösterim; açık onarım maliyeti; etki önceden açıklanır; tekrarlayan bakım zorlaması yasak; gereksiz karmaşalıksa 1.0'dan ÇIKARILABİLİR (öneri: kapalı başlar — Faz 9 kararı).
+## Kültürel koleksiyonlar: Roma/Yunan/Türk-Hun/Çin/Japonya/Mısır/Afrika/İnka/İstanbul-Bizans temaları; tarihî özelliklere uygun; fantastik yorum tarihî gerçek gibi sunulmaz; koleksiyonlar ayırt edilebilir palet.
+## Veri yapısı: benzersiz kimlik; alanlar (ad, açıklama, kategori, nadirlik, stat, görsel ref, uyumluluk, geliştirme, kaynak, satış değeri); ScriptableObject/veri odaklı; TANIM ↔ SAHİPLİK ayrımı (aynı eşyanın farklı geliştirme/durum kaydı); kayıt entegrasyonu; kapat-aç eşya kaybı/çoğalması YASAK; ödül tekrarı engellenir.
+## Performans: çok eşya modeli bellek şişirmez; envanter düşük cihazda akıcı; 3D önizleme gerektiğinde yüklenir; kullanılmayan kaynak bellekte tutulmaz; dokunmatik hedefler yeterince büyük; işlem sırasında kayıt güvenli.
+## Testler (8): kazanma; kuşanma/çıkarma; stat uygulama; filtre/sıralama; geliştirme/onarım; kayıt yükleme; tekrar ödül engeli; mobil performans.
