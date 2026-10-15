@@ -26,6 +26,14 @@ jobs:
       - name: Depoyu al
         uses: actions/checkout@v4
 
+      - name: Library cache (hizlandirma)
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: gladiator-Library-Android-${{ hashFiles('Packages/manifest.json', 'ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: |
+            gladiator-Library-Android-
+
       - name: Secret kontrolu
         env:
           U: ${{ secrets.UNITY_EMAIL }}
@@ -54,10 +62,8 @@ jobs:
               echo "=== 1/3: PERSONAL LISANS ALINIYOR ==="
               xvfb-run -ae /dev/stdout "$LC" --activate-all --include-personal \
                 --username "$UNITY_EMAIL" --password "$UNITY_PASSWORD"
-              echo "=== 2/3: LISANS DOSYASI KONTROLU ==="
-              ls -la /root/.local/share/unity3d/Unity/ || true
-              cat /root/.local/share/unity3d/Unity/Unity_lic.ulf 2>/dev/null | head -c 200 || true
-              echo ""
+              echo "=== 2/3: LISANS KONTROLU ==="
+              ls /root/.config/unity3d/ 2>/dev/null || true
               echo "=== 3/3: APK DERLENIYOR ==="
               xvfb-run -ae /dev/stdout /opt/unity/Editor/Unity -batchmode -nographics -quit \
                 -projectPath /project \
@@ -65,8 +71,7 @@ jobs:
                 -logFile /tmp/build.log
               RC=$?
               echo "BUILD_EXIT=$RC"
-              echo "=== build.log son 25 satir ==="
-              tail -n 25 /tmp/build.log 2>/dev/null || true
+              tail -n 20 /tmp/build.log 2>/dev/null || true
               exit $RC
             '
 
