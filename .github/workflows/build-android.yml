@@ -20,7 +20,7 @@ jobs:
         run: |
           if [ -z "$UNITY_LICENSE" ]; then
             echo "licensed=no" >> "$GITHUB_OUTPUT"
-            echo "UNITY_LICENSE secret yok. Once '1) Aktivasyon Dosyasi Uret' is akisini calistir (Kutu 4-6)."
+            echo "UNITY_LICENSE secret yok. Once '1) Aktivasyon Dosyasi Uret' is akisini calistir."
           else
             echo "licensed=yes" >> "$GITHUB_OUTPUT"
           fi
@@ -31,6 +31,16 @@ jobs:
     if: needs.license-gate.outputs.licensed == 'yes'
     runs-on: ubuntu-latest
     steps:
+      - name: Disk boslugu ac
+        run: |
+          echo "ONCE:"; df -h / | tail -1
+          sudo swapoff -a || true
+          sudo rm -f /swapfile
+          sudo rm -rf /usr/share/dotnet /usr/share/swift /usr/share/miniconda /usr/local/lib/android /opt/ghc /usr/local/share/boost /usr/lib/jvm /opt/hostedtoolcache 2>/dev/null || true
+          sudo docker image prune -af >/dev/null 2>&1 || true
+          sudo apt-get clean >/dev/null 2>&1 || true
+          echo "SONRA:"; df -h / | tail -1
+
       - name: Depoyu al
         uses: actions/checkout@v4
 
