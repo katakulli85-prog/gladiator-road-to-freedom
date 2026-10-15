@@ -1,4 +1,4 @@
-name: "2) Android APK Derle"
+name: "2) Android APK Derle (tek container)"
 
 on:
   workflow_dispatch:
@@ -9,9 +9,9 @@ env:
 
 jobs:
   build:
-    name: APK derle (otomatik lisans)
+    name: Lisans + APK (tek container)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Disk boslugu ac
         run: |
@@ -32,26 +32,43 @@ jobs:
           P: ${{ secrets.UNITY_PASSWORD }}
         run: |
           if [ -z "$U" ] || [ -z "$P" ]; then
-            echo "::error::UNITY_EMAIL ve/veya UNITY_PASSWORD secret eksik."
+            echo "::error::UNITY_EMAIL ve/veya UNITY_PASSWORD eksik."
             exit 1
           fi
           echo "Secretlar mevcut (degerler gizli)."
 
-      - name: Unity ile derle (GameCI + hesap lisansi)
-        uses: game-ci/unity-builder@v4
+      - name: Imaji cek
+        run: docker pull "$UNITY_IMAGE"
+
+      - name: Lisans + APK derleme (tek container, canli log)
         env:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-        with:
-          targetPlatform: Android
-          unityVersion: ${{ env.UNITY_VERSION }}
-          customImage: ${{ env.UNITY_IMAGE }}
-          projectPath: .
-          buildName: Android
-          buildsPath: build
-          version: 0.1.0
-          buildMethod: BuildCommand.PerformBuild
-          androidExportType: androidPackage
+        run: |
+          set -e
+          docker run --rm \
+            -v "$PWD":/project -w /project \
+            -e UNITY_EMAIL -e UNITY_PASSWORD \
+            "$UNITY_IMAGE" bash -c '
+              echo "=== 1/2: Unity Personal lisansi aliniyor ==="
+              xvfb-run -ae /dev/stdout /opt/unity/Editor/Unity -batchmode -nographics -quit \
+                -username "$UNITY_EMAIL" -password "$UNITY_PASSWORD" \
+                -logFile /tmp/license.log || true
+              ls -la /root/.local/share/unity3d/Unity/ 2>/dev/null || echo "UYARI: lisans dizini yok"
+              echo "=== 2/2: APK derleniyor ==="
+              tail -F /tmp/build.log 2>/dev/null &
+              TAILPID=$!
+              xvfb-run -ae /dev/stdout /opt/unity/Editor/Unity -batchmode -nographics -quit \
+                -projectPath /project \
+                -executeMethod BuildCommand.PerformBuild \
+                -logFile /tmp/build.log
+              RC=$?
+              sleep 2; kill $TAILPID 2>/dev/null || true
+              echo "BUILD_EXIT=$RC"
+              echo "=== build.log son 25 satir ==="
+              tail -n 25 /tmp/build.log 2>/dev/null || true
+              exit $RC
+            '
 
       - name: APK artifact yukle
         uses: actions/upload-artifact@v4
