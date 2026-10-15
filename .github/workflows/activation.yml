@@ -10,6 +10,13 @@ jobs:
   request-activation-file:
     runs-on: ubuntu-latest
     steps:
+      - name: Disk Alanini Ac (Temizlik)
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/lib/android
+          docker system prune -f
+
       - name: Aktivasyon dosyasi uretiliyor
         run: |
           set -e
