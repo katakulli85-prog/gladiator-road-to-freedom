@@ -3,6 +3,7 @@ using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public static class BuildCommand
@@ -17,8 +18,8 @@ public static class BuildCommand
         EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTarget.Android);
         ApplyPlayerSettings();
 
-        var menuScene = BuildMenuScene();
-        var arenaScene = BuildArenaScene();
+        BuildMenuScene();
+        BuildArenaScene();
 
         Directory.CreateDirectory("build/Android");
         var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
@@ -50,7 +51,7 @@ public static class BuildCommand
         PlayerSettings.allowedAutorotateToLandscapeRight = true;
     }
 
-    static Scene BuildMenuScene()
+    static void BuildMenuScene()
     {
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -58,23 +59,21 @@ public static class BuildCommand
         cam.GetComponent<Camera>().clearFlags = CameraClearFlags.SolidColor;
         cam.GetComponent<Camera>().backgroundColor = new Color(0.08f, 0.06f, 0.05f);
 
-        var canvasGO = new GameObject("Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster), typeof(MenuUI));
+        var canvasGO = new GameObject("Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
         canvasGO.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
         var scaler = canvasGO.GetComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
+        var menuUI = canvasGO.AddComponent<MenuUI>();
 
         MakeLabel(canvasGO.transform, "Title", "GLADIATOR", new Vector2(0.5f, 0.85f), 120, new Color(0.85f, 0.68f, 0.3f));
         MakeLabel(canvasGO.transform, "SubTitle", "ROAD TO FREEDOM", new Vector2(0.5f, 0.76f), 48, new Color(0.75f, 0.6f, 0.35f));
+        MakeButton(canvasGO.transform, "BtnNew", "YENİ OYUN", new Vector2(0.5f, 0.5f), 56, menuUI.OnNewGame);
+        MakeButton(canvasGO.transform, "BtnAbout", "HAKKINDA", new Vector2(0.5f, 0.36f), 44, menuUI.OnAbout);
 
-        MakeButton(canvasGO.transform, "BtnNew", "YENİ OYUN", new Vector2(0.5f, 0.5f), 56, menuUI => menuUI.OnNewGame);
-        MakeButton(canvasGO.transform, "BtnAbout", "HAKKINDA", new Vector2(0.5f, 0.36f), 44, menuUI => menuUI.OnAbout);
-
-        // About panel (kapatilir)
         var about = new GameObject("AboutPanel", typeof(Image));
         about.transform.SetParent(canvasGO.transform, false);
-        var img = about.GetComponent<Image>();
-        img.color = new Color(0f, 0f, 0f, 0.92f);
+        about.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.92f);
         var art = about.GetComponent<RectTransform>();
         art.anchorMin = Vector2.zero; art.anchorMax = Vector2.one;
         art.offsetMin = Vector2.zero; art.offsetMax = Vector2.zero;
@@ -82,17 +81,16 @@ public static class BuildCommand
         MakeLabel(about.transform, "AboutText",
             "Created by Orhan Bıyık\n\nKöle bir gladyatör olarak başla,\n100 savaşı kazanarak özgürlüğünü kazan.\n\nSürüm v0.2.0 — Faz 1",
             new Vector2(0.5f, 0.5f), 40, new Color(0.9f, 0.85f, 0.7f));
-        MakeButton(about.transform, "BtnCloseAbout", "KAPAT", new Vector2(0.5f, 0.15f), 44, menuUI => menuUI.OnCloseAbout);
-        about.gameObject.SetActive(false);
+        MakeButton(about.transform, "BtnCloseAbout", "KAPAT", new Vector2(0.5f, 0.15f), 44, menuUI.OnCloseAbout);
+        about.SetActive(false);
 
-        var flow = new GameObject("GameFlow", typeof(GameFlowRunner));
+        var flowGO = new GameObject("GameFlow", typeof(GameFlowRunner));
 
         EditorSceneManager.SaveScene(scene, MenuScenePath);
         Debug.Log("[Flow] Ana menu sahnesi uretildi: " + MenuScenePath);
-        return scene;
     }
 
-    static Scene BuildArenaScene()
+    static void BuildArenaScene()
     {
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -116,9 +114,8 @@ public static class BuildCommand
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
 
-        MakeLabel(canvasGO.transform, "ArenaText", "ARENA — Faz 1 test sahnesi\n(Geri dön: Menü butonu)", new Vector2(0.5f, 1f), 40, Color.white);
+        MakeLabel(canvasGO.transform, "ArenaText", "ARENA — Faz 1 test sahnesi", new Vector2(0.5f, 1f), 40, Color.white);
 
-        // Menüye dönüş butonu
         var btnGO = new GameObject("BtnBackMenu", typeof(Button), typeof(Image));
         btnGO.transform.SetParent(canvasGO.transform, false);
         var rt = btnGO.GetComponent<RectTransform>();
@@ -137,12 +134,11 @@ public static class BuildCommand
         btnGO.GetComponent<Button>().onClick.AddListener(() =>
         {
             Debug.Log("[Arena] Menuye donuluyor");
-            UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
+            SceneManager.LoadScene("MainMenu");
         });
 
         EditorSceneManager.SaveScene(scene, ArenaScenePath);
         Debug.Log("[Flow] Arena sahnesi guncellendi (menu donus butonu eklendi)");
-        return scene;
     }
 
     static GameObject MakeLabel(Transform parent, string name, string text,
@@ -163,7 +159,7 @@ public static class BuildCommand
     }
 
     static GameObject MakeButton(Transform parent, string name, string text,
-        Vector2 anchor, int fontSize, System.Func<MenuUI, UnityEngine.Events.UnityAction> bind)
+        Vector2 anchor, int fontSize, UnityEngine.Events.UnityAction action)
     {
         var go = new GameObject(name, typeof(Button), typeof(Image));
         go.transform.SetParent(parent, false);
@@ -182,8 +178,7 @@ public static class BuildCommand
         lrt.anchorMin = Vector2.zero; lrt.anchorMax = Vector2.one;
         lrt.offsetMin = Vector2.zero; lrt.offsetMax = Vector2.zero;
 
-        var menuUI = parent.GetComponent<MenuUI>();
-        go.GetComponent<Button>().onClick.AddListener(bind(menuUI));
+        go.GetComponent<Button>().onClick.AddListener(action);
         return go;
     }
 
