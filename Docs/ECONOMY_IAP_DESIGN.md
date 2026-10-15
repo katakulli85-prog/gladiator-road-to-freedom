@@ -1,0 +1,12 @@
+# EKONOMİ VE IAP (kayıt)
+## Para birimleri: Altın (savaş/görev/başarım); geliştirme malzemeleri; nadir malzemeler; özel jeton (boss/başarım/ilerleme); premium para (gerçek para, Play sürümü).
+## IAP kapsamı (yalnız Google Play sürümü; sideload'da görünmez): güçlü/özel silahlar; üst zırh/kalkan; efsanevi paketler; özel gladyatörler; premium karakter paketleri; efekt/bitirici görünümleri; premium para paketleri; malzeme paketleri; başlangıç paketleri; kozmetik; (koşullu) arena temaları.
+## GÜÇ-PARİTE KURALI: premium belirgin avantaj sağlayabilir AMA her premium ekipmanın ücretsiz oyuncunun savaşarak ulaşabileceği eşdeğeri VAR; hiçbir savaş içeriği yalnız parayla geçilmez; 100 savaşın tamamı ücretsiz bitirilebilir; ödemeyen oyuncunun ilerlemesi yapay durdurulamaz.
+## Mağaza kategorileri: premium silah/zırh; efsanevi paket; gladyatör; para paketi; malzeme; kozmetik; başlangıç; dönemsel teklif. Fiyat/içerik/koşul açık; onaysız ödeme yasak; başarısız işlemde para alınmaz/içerik kaybolmaz.
+## Fiyatlandırma: ürün kimlikleri kodda sabit DEĞİL; Play Console'da tanımlanır; fiyatlar mağazadan alınır (ülke/vergi/platform); desteklenmeyen ödeme "çalışıyor" gösterilmez. Sahte indirim/geri sayım yasak.
+## Bakiye güvenliği: premium para + satın alımlar tutarlı kayıt; işlem kimliği defteri ile çoğaltma engeli; başarılı ama teslim edilmeyen işlem güvenli tekrar işlenebilir; yerel kayıt tek başına gerçek para doğrulaması DEĞİL; sunucu doğrulaması 1.0'da GEREKMEZ (Google acknowledgment yeterli; çevrimdışı tek oyunculu) — ileride ihtiyaç olursa ayrı tasarım. Gizli anahtar koda gömülmez.
+## Çevrimdışı ilkesi: savaş asla internet istemez; yalnız satın alma anı internet ister; kesinti olursa işlem kuyruğu bağlantı gelince tek atomik adımda işlenir (çift ödül/kayıp yasak).
+## Ödüllü reklam: isteğe bağlı; zorunlu değil; bulunamazsa ilerleme engellenmez; ödül tek seferlik talep; reklam ve IAP geliri ayrı takip; gerçek birimle doğrulanmadan "tamam" sayılmaz.
+## Analitik: gereksiz kişisel veri YOK; gizlilik kurallarına uygun; satış kategorileri takibi ileride güvenli altyapıyla.
+## Araç: Unity IAP (ücretsiz) + Google Play Billing; Play Console 25 $ (onaylandı; ödeme adımında teyit istenir); Google kesinti ~%15; Merchant/banka bilgileri gerektiğinde (kullanıcının gerçek bilgileri).
+## Denge testleri (12 senaryo, belgeden aynen): ücretsiz 100 savaş tamamlama; premium denge etkisi; satın alma; para satın alma+harcama; başarısız/iade; doğru teslim; tekrar engeli; kapat-aç korunma; internet kesintisi; Play test ortamı; fiyat doğruluğu; reklam yokken çalışma.
