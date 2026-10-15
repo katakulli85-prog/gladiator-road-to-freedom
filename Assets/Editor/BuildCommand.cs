@@ -17,7 +17,6 @@ public static class BuildCommand
         Debug.Log("[Bootstrap] Faz1 APK derlemesi basliyor...");
         EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTarget.Android);
         ApplyPlayerSettings();
-
         BuildMenuScene();
         BuildArenaScene();
 
@@ -68,7 +67,7 @@ public static class BuildCommand
 
         MakeLabel(canvasGO.transform, "Title", "GLADIATOR", new Vector2(0.5f, 0.85f), 120, new Color(0.85f, 0.68f, 0.3f));
         MakeLabel(canvasGO.transform, "SubTitle", "ROAD TO FREEDOM", new Vector2(0.5f, 0.76f), 48, new Color(0.75f, 0.6f, 0.35f));
-        MakeButton(canvasGO.transform, "BtnNew", "YENİ OYUN", new Vector2(0.5f, 0.5f), 56, menuUI.OnNewGame);
+        MakeButton(canvasGO.transform, "BtnNew", "YENI OYUN", new Vector2(0.5f, 0.5f), 56, menuUI.OnNewGame);
         MakeButton(canvasGO.transform, "BtnAbout", "HAKKINDA", new Vector2(0.5f, 0.36f), 44, menuUI.OnAbout);
 
         var about = new GameObject("AboutPanel", typeof(Image));
@@ -79,7 +78,7 @@ public static class BuildCommand
         art.offsetMin = Vector2.zero; art.offsetMax = Vector2.zero;
         MakeLabel(about.transform, "AboutTitle", "GLADIATOR: ROAD TO FREEDOM", new Vector2(0.5f, 0.72f), 56, Color.white);
         MakeLabel(about.transform, "AboutText",
-            "Created by Orhan Bıyık\n\nKöle bir gladyatör olarak başla,\n100 savaşı kazanarak özgürlüğünü kazan.\n\nSürüm v0.2.0 — Faz 1",
+            "Created by Orhan Biyik\n\nKole bir gladyator olarak basla,\n100 savasi kazanarak ozgurlugunu kazan.\n\nSurum v0.2.0 - Faz 1",
             new Vector2(0.5f, 0.5f), 40, new Color(0.9f, 0.85f, 0.7f));
         MakeButton(about.transform, "BtnCloseAbout", "KAPAT", new Vector2(0.5f, 0.15f), 44, menuUI.OnCloseAbout);
         about.SetActive(false);
@@ -114,7 +113,7 @@ public static class BuildCommand
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
 
-        MakeLabel(canvasGO.transform, "ArenaText", "ARENA — Faz 1 test sahnesi", new Vector2(0.5f, 1f), 40, Color.white);
+        MakeLabel(canvasGO.transform, "ArenaText", "ARENA - Faz 1 test sahnesi", new Vector2(0.5f, 1f), 40, Color.white);
 
         var btnGO = new GameObject("BtnBackMenu", typeof(Button), typeof(Image));
         btnGO.transform.SetParent(canvasGO.transform, false);
@@ -126,7 +125,7 @@ public static class BuildCommand
         var lblGO = new GameObject("Label", typeof(Text));
         lblGO.transform.SetParent(btnGO.transform, false);
         var lbl = lblGO.GetComponent<Text>();
-        lbl.text = "MENÜYE DÖN";
+        lbl.text = "MENUYE DON";
         lbl.font = LoadBuiltinFont(); lbl.fontSize = 36; lbl.color = Color.white;
         lbl.alignment = TextAnchor.MiddleCenter;
         var lrt = lbl.rectTransform; lrt.anchorMin = Vector2.zero; lrt.anchorMax = Vector2.one;
@@ -138,7 +137,7 @@ public static class BuildCommand
         });
 
         EditorSceneManager.SaveScene(scene, ArenaScenePath);
-        Debug.Log("[Flow] Arena sahnesi guncellendi (menu donus butonu eklendi)");
+        Debug.Log("[Flow] Arena sahnesi guncellendi");
     }
 
     static GameObject MakeLabel(Transform parent, string name, string text,
