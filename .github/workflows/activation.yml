@@ -4,7 +4,6 @@ on:
   workflow_dispatch:
 
 env:
-  UNITY_VERSION: 2022.3.55f1
   UNITY_IMAGE: unityci/editor:ubuntu-2022.3.55f1-android-3
 
 jobs:
@@ -25,26 +24,37 @@ jobs:
           sudo apt-get clean >/dev/null 2>&1 || true
           echo "SONRA:"; df -h / | tail -1
 
-      - name: Aktivasyon dosyasi uret (GameCI resmi aksiyonu)
-        uses: game-ci/unity-activate@v2
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-        with:
-          unityVersion: ${{ env.UNITY_VERSION }}
-          customImage: ${{ env.UNITY_IMAGE }}
+      - name: Imaji cek
+        run: docker pull "$UNITY_IMAGE"
 
-      - name: .alf dosyasini topla
-        if: always()
+      - name: Ortam kontrolu (xvfb + Unity yolu)
+        run: |
+          docker run --rm --entrypoint bash "$UNITY_IMAGE" -c 'echo "xvfb-run -> $(command -v xvfb-run || echo YOK)"; echo "Unity -> $(test -x /opt/unity/Editor/Unity && echo VAR || echo YOK)"'
+
+      - name: Aktivasyon dosyasi uret (canli log + 15 dk tavan)
         run: |
           set -e
-          mkdir -p "$RUNNER_TEMP/alf"
-          for d in "$GITHUB_WORKSPACE" "$RUNNER_TEMP" "/github/home" "$HOME"; do
-            if [ -d "$d" ]; then
-              F=$(find "$d" -maxdepth 4 -name "*.alf" 2>/dev/null | head -1)
-              if [ -n "$F" ]; then echo "Bulundu: $F"; cp "$F" "$RUNNER_TEMP/alf/"; break; fi
-            fi
-          done
-          ls -la "$RUNNER_TEMP/alf" || true
+          OUT="$RUNNER_TEMP/alf"
+          mkdir -p "$OUT"
+          rm -f "$OUT/unity.log"
+          tail -F "$OUT/unity.log" &
+          TAILPID=$!
+          set +e
+          timeout 900 docker run --rm --entrypoint bash -v "$OUT:/output" -w /output "$UNITY_IMAGE" -c 'xvfb-run -ae /dev/stdout /opt/unity/Editor/Unity -batchmode -nographics -quit -createManualActivationFile -logFile /output/unity.log; echo "UNITY_EXIT=$?"; find /root /home /github /output -maxdepth 4 -name "*.alf" 2>/dev/null'
+          DOCKER_RC=$?
+          set -e
+          sleep 2
+          kill $TAILPID 2>/dev/null || true
+          echo "DOCKER_RC=$DOCKER_RC"
+          echo "--- OUT icerigi ---"
+          ls -la "$OUT"
+          ALF=$(find "$OUT" -name "*.alf" | head -1)
+          if [ -z "$ALF" ]; then
+            echo "=== unity.log son 40 satir ==="
+            tail -n 40 "$OUT/unity.log" 2>/dev/null || echo "unity.log hic olusmadi"
+            exit 1
+          fi
+          echo "ALF OK: $ALF"
 
       - name: .alf artifact olarak yukle
         if: always()
