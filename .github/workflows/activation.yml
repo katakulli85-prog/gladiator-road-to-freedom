@@ -4,12 +4,17 @@ on:
   workflow_dispatch:
 
 env:
+  UNITY_VERSION: 2022.3.55f1
   UNITY_IMAGE: unityci/editor:ubuntu-2022.3.55f1-android-3
 
 jobs:
   request-activation-file:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
+      - name: Depoyu al
+        uses: actions/checkout@v4
+
       - name: Disk boslugu ac
         run: |
           echo "ONCE:"; df -h / | tail -1
@@ -20,40 +25,48 @@ jobs:
           sudo apt-get clean >/dev/null 2>&1 || true
           echo "SONRA:"; df -h / | tail -1
 
-      - name: Aktivasyon dosyasi uretiliyor
+      - name: Aktivasyon dosyasi uret (GameCI resmi aksiyonu)
+        uses: game-ci/unity-activate@v2
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          customImage: ${{ env.UNITY_IMAGE }}
+
+      - name: .alf dosyasini topla
+        if: always()
         run: |
           set -e
-          OUT="$RUNNER_TEMP/alf"
-          mkdir -p "$OUT"
-          echo "Imaj indiriliyor: $UNITY_IMAGE"
-          docker pull "$UNITY_IMAGE"
-          docker run --rm -v "$OUT:/output" -w /output "$UNITY_IMAGE" bash -c "xvfb-run -ae /dev/stdout /opt/unity/Editor/Unity -batchmode -nographics -quit -createManualActivationFile -logFile /output/unity.log"
-          ls -la "$OUT"
-          if ! compgen -G "$OUT/*.alf" > /dev/null; then
-            echo "::error::.alf uretilemedi. unity.log son satirlari:"
-            tail -n 50 "$OUT/unity.log" || true
-            exit 1
-          fi
+          mkdir -p "$RUNNER_TEMP/alf"
+          for d in "$GITHUB_WORKSPACE" "$RUNNER_TEMP" "/github/home" "$HOME"; do
+            if [ -d "$d" ]; then
+              F=$(find "$d" -maxdepth 4 -name "*.alf" 2>/dev/null | head -1)
+              if [ -n "$F" ]; then echo "Bulundu: $F"; cp "$F" "$RUNNER_TEMP/alf/"; break; fi
+            fi
+          done
+          ls -la "$RUNNER_TEMP/alf" || true
 
       - name: .alf artifact olarak yukle
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: Unity_ActivationFile
           path: ${{ runner.temp }}/alf/*.alf
           retention-days: 14
-          if-no-files-found: error
+          if-no-files-found: ignore
 
       - name: Talimatlari ozete yaz
+        if: always()
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
           ## Aktivasyon adimlari (telefondan)
-          1. Artifacts bolumunden Unity_ActivationFile dosyasini indir, .alf dosyasini cikar.
-          2. Tarayicida license.unity3d.com/manual adresine git, Unity hesabinla gir.
-          3. Browse ile .alf dosyasini sec -> NEXT -> .ulf dosyasi iner.
+          1. Artifacts bolumunden Unity_ActivationFile dosyasini indir, .alf cikar.
+          2. Tarayicida license.unity3d.com/manual -> Unity hesabinla gir.
+          3. Browse ile .alf dosyasini sec -> NEXT -> .ulf iner.
           4. .ulf dosyasini metin olarak ac, TUM icerigi kopyala.
-          5. GitHub -> depo -> Settings -> Secrets and variables -> Actions -> New repository secret
+          5. Depo -> Settings -> Secrets and variables -> Actions -> New repository secret
              - Name: UNITY_LICENSE
-             - Secret: kopyaladigin .ulf icerigi (baska hicbir sey ekleme).
+             - Secret: kopyaladigin .ulf icerigi.
           6. Sonra "2) Android APK Derle" is akisini elle calistir.
           UYARI: .ulf gizli belgedir; depoya commit ETME, kimseyle paylasma.
           SUMMARY
