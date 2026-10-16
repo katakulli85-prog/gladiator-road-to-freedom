@@ -33,6 +33,7 @@ Projenin tek dogruluk kaynağı. Yeni oturumda bu dosyayı yapay zekâya yapış
 0 hat kanıtı → 3 menü+akış → 4-5 hareket/kamera/kontroller(+haptik temel) → 6 dövüş çekirdeği → 7 AI → 8 arena+ilk 10 savaş(+eğitim) → 9 envanter/ekonomi/kayıt v1 → 10 100 savaş+boss'lar+hikâye → 11 görsel/ses/performans(URP,ekran profilleri) → 12 kayıt sağlamlaştırma → 13 IAP+yayın APK(Play 25 $ onaylı, ödeme adımında teyit) → 14 v1.0 teslim.
 
 ## Doküman indeksi (Docs/)
+**ANA PLAN: GAME_DESIGN_MASTER.md** — çelişkide o geçerlidir.
 EQUIPMENT_PLAN, ENEMY_PLAN, CHARACTER_ROSTER, VISUAL_DESIGN, ARENA_PLAN, COMBAT_SPEC,
 SCREEN_SETTINGS, FIRST_LAUNCH_FLOW, ITEM_INVENTORY_DESIGN, ECONOMY_IAP_DESIGN,
 PRODUCTION_UPGRADE_DESIGN, QUESTS_REWARDS_DESIGN, DEFEAT_RETRY_DESIGN,
