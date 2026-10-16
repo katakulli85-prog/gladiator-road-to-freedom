@@ -153,6 +153,7 @@ public static class BuildCommand
         var menuUI = canvasGO.AddComponent<MenuUI>();
 
         EnsureEventSystem();
+        canvasGO.AddComponent<ArenaUI>();
 
         MakeLabel(canvasGO.transform, "Title", "GLADIATOR", new Vector2(0.5f, 0.80f), 110, new Color(0.85f, 0.68f, 0.3f));
         MakeLabel(canvasGO.transform, "SubTitle", "ROAD TO FREEDOM", new Vector2(0.5f, 0.70f), 46, new Color(0.75f, 0.6f, 0.35f));
@@ -247,7 +248,7 @@ public static class BuildCommand
         player.AddComponent<CharacterController>();
         player.AddComponent<PlayerMotor>();
         player.AddComponent<PlayerCombat>();
-        player.AddComponent<PlayerHealth>();
+        var phealth = player.AddComponent<PlayerHealth>();
 
         var enemy = GameObject.CreatePrimitive(PrimitiveType.Capsule);
         enemy.name = "Enemy";
@@ -343,11 +344,13 @@ public static class BuildCommand
 
         var victory = MakePanel(canvasGO.transform, "VictoryPanel", "ZAFER",
             "Dusmani yendin!\nIlk duello tamam.");
+        eai.victoryPanel = victory;
         MakeButton(victory.transform, "BtnRetry", "TEKRAR", new Vector2(0.5f, 0.3f), 40,
             () => SceneManager.LoadScene(1));
 
         var defeat = MakePanel(canvasGO.transform, "DefeatPanel", "YENILGI",
             "Dustun... ama ayaga kalk.\n\nYuz kez dustum, yuz kez kalktim.");
+        phealth.defeatPanel = defeat;
         MakeButton(defeat.transform, "BtnRetryD", "TEKRAR", new Vector2(0.5f, 0.3f), 40,
             () => SceneManager.LoadScene(1));
         MakeButton(defeat.transform, "BtnMenuD", "MENU", new Vector2(0.5f, 0.18f), 36,
