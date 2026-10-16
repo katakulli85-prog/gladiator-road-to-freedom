@@ -68,17 +68,26 @@ jobs:
               xvfb-run -ae /dev/stdout /opt/unity/Editor/Unity -batchmode -nographics -quit \
                 -projectPath /project \
                 -executeMethod BuildCommand.PerformBuild \
-                -logFile /tmp/build.log
+                -logFile /project/build.log
               RC=$?
               echo "BUILD_EXIT=$RC"
+              echo "=== LOGERROR CONTEXT ==="
+              grep -B3 -A8 "LogError" /project/build.log | head -n 60 || echo "LogError yok"
               echo "=== HATA SATIRLARI (harf duyarsiz) ==="
-              grep -iE "error|exception|abort|fail" /tmp/build.log | head -n 40 || echo "hata satiri bulunamadi"
-              echo "=== BOOTSTRAP RAPOR SATIRLARI ==="
-              grep -E "\[Bootstrap\]|\[Flow\]|\[Arena\]|\[Menu\]" /tmp/build.log || echo "bootstrap satiri yok"
-              echo "=== LOG SON 30 SATIR ==="
-              tail -n 30 /tmp/build.log 2>/dev/null || true
+              grep -iE "error|exception|abort|fail" /project/build.log | head -n 40 || echo "yok"
+              echo "=== BOOTSTRAP RAPOR ==="
+              grep -E "\[Bootstrap\]|\[Flow\]|\[Arena\]" /project/build.log || true
               exit $RC
             '
+
+      - name: Tam build.log artifact (her durumda)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-build-log
+          path: build.log
+          retention-days: 7
+          if-no-files-found: ignore
 
       - name: APK artifact yukle
         uses: actions/upload-artifact@v4
