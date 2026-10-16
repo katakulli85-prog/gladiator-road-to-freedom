@@ -34,7 +34,9 @@ public class PlayerMotor : MonoBehaviour
         Vector3 right = new Vector3(forward.z, 0f, -forward.x);
 
         Vector3 move = (forward * input.y + right * input.x).normalized * speed * Mathf.Clamp01(input.magnitude);
-        cc.Move(move * Time.deltaTime + Physics.gravity * 0.5f * Time.deltaTime * Vector3.down);
+        cc.Move(move * Time.deltaTime);
+        if (!cc.isGrounded)
+            cc.Move(Physics.gravity * 0.5f * Time.deltaTime);
 
         // Yonune donus
         if (move.sqrMagnitude > 0.01f)

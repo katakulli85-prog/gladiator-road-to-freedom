@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
 // Sol altta sanal joystick - coklu dokunma uyumlu (kendi pointerId'sini takip eder)
