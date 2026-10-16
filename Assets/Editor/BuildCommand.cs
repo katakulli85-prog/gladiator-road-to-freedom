@@ -177,12 +177,71 @@ public static class BuildCommand
         var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
         ground.name = "Ground";
         ground.transform.localScale = new Vector3(8f, 1f, 8f);
-        ground.GetComponent<Renderer>().sharedMaterial = MakeMat(new Color(0.72f, 0.63f, 0.47f));
+        ground.GetComponent<Renderer>().sharedMaterial = MakeMat(new Color(0.85f, 0.72f, 0.55f));
+        ground.transform.localScale = new Vector3(10f, 1f, 10f);
+
+        // Arena duvarlari (4 yon - basit ama atmosferik)
+        for (int i = 0; i < 4; i++)
+        {
+            var wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            wall.name = "ArenaWall_" + i;
+            wall.transform.SetParent(ground.transform.parent, false);
+            float sz = 40f;
+            if (i == 0) { wall.transform.position = new Vector3(0, 3, 15f); wall.transform.localScale = new Vector3(sz, 6, 1); }
+            if (i == 1) { wall.transform.position = new Vector3(0, 3, -15f); wall.transform.localScale = new Vector3(sz, 6, 1); }
+            if (i == 2) { wall.transform.position = new Vector3(15f, 3, 0); wall.transform.localScale = new Vector3(1, 6, sz); }
+            if (i == 3) { wall.transform.position = new Vector3(-15f, 3, 0); wall.transform.localScale = new Vector3(1, 6, sz); }
+            wall.GetComponent<Renderer>().sharedMaterial = MakeMat(new Color(0.45f, 0.35f, 0.25f));
+        }
+
+        // 4 meşale ışığı (arena köşelerinde, sıcak turuncu)
+        for (int i = 0; i < 4; i++)
+        {
+            var torch = new GameObject("Torch_" + i, typeof(Light));
+            torch.GetComponent<Light>().type = LightType.Point;
+            torch.GetComponent<Light>().color = new Color(1f, 0.55f, 0.2f);
+            torch.GetComponent<Light>().intensity = 1.8f;
+            torch.GetComponent<Light>().range = 12f;
+            float tx = (i == 0 || i == 2) ? 12f : -12f;
+            float tz = (i < 2) ? 12f : -12f;
+            torch.transform.position = new Vector3(tx, 4f, tz);
+        }
+
+        // Toz partiküllerini simüle etmek için küçük yarı saydam küpler
+        for (int i = 0; i < 20; i++)
+        {
+            var dust = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            dust.name = "Dust_" + i;
+            dust.transform.SetParent(ground.transform.parent, false);
+            dust.transform.position = new Vector3(
+                Random.Range(-14f, 14f), Random.Range(0.5f, 6f), Random.Range(-14f, 14f));
+            float dsz = Random.Range(0.05f, 0.2f);
+            dust.transform.localScale = new Vector3(dsz, dsz, dsz);
+            dust.GetComponent<Renderer>().sharedMaterial = MakeMat(new Color(0.9f, 0.8f, 0.6f, 0.3f));
+            Object.DestroyImmediate(dust.GetComponent<Collider>(), true);
+        }
 
         var player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
         player.name = "Player";
         player.transform.position = new Vector3(0f, 1f, 0f);
-        player.GetComponent<Renderer>().sharedMaterial = MakeMat(new Color(0.75f, 0.55f, 0.35f));
+        player.GetComponent<Renderer>().sharedMaterial = MakeMat(new Color(0.6f, 0.45f, 0.3f));
+
+        // Gladyator görünümü: kalkan + kılıç (çocuk parçalar)
+        var shield = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        shield.name = "Shield";
+        shield.transform.SetParent(player.transform, false);
+        shield.transform.localPosition = new Vector3(-0.55f, 0.1f, 0.2f);
+        shield.transform.localScale = new Vector3(0.15f, 0.7f, 0.7f);
+        shield.GetComponent<Renderer>().sharedMaterial = MakeMat(new Color(0.5f, 0.4f, 0.25f));
+        Object.DestroyImmediate(shield.GetComponent<Collider>(), true);
+
+        var sword = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        sword.name = "Sword";
+        sword.transform.SetParent(player.transform, false);
+        sword.transform.localPosition = new Vector3(0.55f, 0.3f, 0.3f);
+        sword.transform.localScale = new Vector3(0.08f, 0.08f, 1.2f);
+        sword.GetComponent<Renderer>().sharedMaterial = MakeMat(new Color(0.75f, 0.75f, 0.8f));
+        Object.DestroyImmediate(sword.GetComponent<Collider>(), true);
         var pc = player.GetComponent<CapsuleCollider>();
         if (pc != null) UnityEngine.Object.DestroyImmediate(pc, true);
         player.AddComponent<CharacterController>();
