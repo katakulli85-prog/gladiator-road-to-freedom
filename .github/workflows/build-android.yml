@@ -71,10 +71,12 @@ jobs:
                 -logFile /tmp/build.log
               RC=$?
               echo "BUILD_EXIT=$RC"
-              echo "=== HATA SATIRLARI ==="
-              grep -E "error|Exception|Aborting" /tmp/build.log | head -n 30 || echo "hata satiri bulunamadi"
-              echo "=== LOG SON 40 SATIR ==="
-              tail -n 40 /tmp/build.log 2>/dev/null || true
+              echo "=== HATA SATIRLARI (harf duyarsiz) ==="
+              grep -iE "error|exception|abort|fail" /tmp/build.log | head -n 40 || echo "hata satiri bulunamadi"
+              echo "=== BOOTSTRAP RAPOR SATIRLARI ==="
+              grep -E "\[Bootstrap\]|\[Flow\]|\[Arena\]|\[Menu\]" /tmp/build.log || echo "bootstrap satiri yok"
+              echo "=== LOG SON 30 SATIR ==="
+              tail -n 30 /tmp/build.log 2>/dev/null || true
               exit $RC
             '
 
