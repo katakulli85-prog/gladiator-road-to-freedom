@@ -15,7 +15,7 @@ public static class BuildCommand
 
     public static void PerformBuild()
     {
-        Debug.Log("[Bootstrap] Faz1 P2 APK derlemesi basliyor...");
+        Debug.Log("[Bootstrap] Faz1 P2-P3 APK derlemesi basliyor...");
         EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTarget.Android);
         ApplyPlayerSettings();
         Directory.CreateDirectory("Assets/_Project/Scenes");
@@ -45,7 +45,7 @@ public static class BuildCommand
     {
         PlayerSettings.companyName = "katakulli85-prog";
         PlayerSettings.productName = "Gladiator Road to Freedom";
-        PlayerSettings.bundleVersion = "0.4.0";
+        PlayerSettings.bundleVersion = "0.5.0";
         PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.katakulli85prog.gladiatorrtf");
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.Mono2x);
         PlayerSettings.Android.minSdkVersion = (AndroidSdkVersions)24;
@@ -161,7 +161,7 @@ public static class BuildCommand
 
         var about = MakePanel(canvasGO.transform, "AboutPanel",
             "GLADIATOR: ROAD TO FREEDOM",
-            "Created by Orhan Biyik\n\nKole bir gladyator olarak basla,\n100 savasi kazanarak ozgurlugunu kazan.\n\nSurum v0.4.0 - Faz 1 P2");
+            "Created by Orhan Biyik\n\nKole bir gladyator olarak basla,\n100 savasi kazanarak ozgurlugunu kazan.\n\nSurum v0.5.0 - Faz 1 P2-P3");
         MakeButton(about.transform, "BtnCloseAbout", "KAPAT", new Vector2(0.5f, 0.15f), 42, menuUI.OnCloseAbout);
 
         var flowGO = new GameObject("GameFlow", typeof(GameFlowRunner));
@@ -179,7 +179,6 @@ public static class BuildCommand
         ground.transform.localScale = new Vector3(8f, 1f, 8f);
         ground.GetComponent<Renderer>().sharedMaterial = MakeMat(new Color(0.72f, 0.63f, 0.47f));
 
-        // OYUNCU
         var player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
         player.name = "Player";
         player.transform.position = new Vector3(0f, 1f, 0f);
@@ -191,7 +190,6 @@ public static class BuildCommand
         player.AddComponent<PlayerCombat>();
         player.AddComponent<PlayerHealth>();
 
-        // DUSMAN (AI'li)
         var enemy = GameObject.CreatePrimitive(PrimitiveType.Capsule);
         enemy.name = "Enemy";
         enemy.transform.position = new Vector3(0f, 1f, 4f);
@@ -199,20 +197,17 @@ public static class BuildCommand
         var eai = enemy.AddComponent<EnemyAI>();
         eai.target = player.transform;
 
-        // Kamera + sarsinti
         var camGO = new GameObject("Main Camera", typeof(Camera), typeof(AudioListener));
         camGO.transform.position = new Vector3(0f, 3.2f, -5.2f);
         var camScript = camGO.AddComponent<ThirdPersonCamera>();
         camScript.target = player.transform;
         camGO.AddComponent<ScreenShake>();
 
-        // Isik
         var lightGO = new GameObject("Directional Light", typeof(Light));
         lightGO.GetComponent<Light>().type = LightType.Directional;
         lightGO.GetComponent<Light>().intensity = 1.2f;
         lightGO.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
 
-        // HUD
         var canvasGO = new GameObject("Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
         canvasGO.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
         var scaler = canvasGO.GetComponent<CanvasScaler>();
@@ -221,6 +216,9 @@ public static class BuildCommand
 
         EnsureEventSystem();
 
+        var hudGO = new GameObject("HUD", typeof(HUD));
+        var hud = hudGO.GetComponent<HUD>();
+
         var joyBG = new GameObject("JoystickBG", typeof(Image));
         joyBG.transform.SetParent(canvasGO.transform, false);
         joyBG.AddComponent<VirtualJoystick>();
@@ -228,6 +226,36 @@ public static class BuildCommand
         joyRT.anchorMin = new Vector2(0.08f, 0.12f); joyRT.anchorMax = new Vector2(0.08f, 0.12f);
         joyRT.sizeDelta = new Vector2(240f, 240f);
         joyBG.GetComponent<Image>().color = new Color(0.2f, 0.18f, 0.12f, 0.45f);
+
+        var pHud = new GameObject("PlayerBarBG", typeof(Image));
+        pHud.transform.SetParent(canvasGO.transform, false);
+        var prt = pHud.GetComponent<RectTransform>();
+        prt.anchorMin = new Vector2(0.28f, 0.93f); prt.anchorMax = new Vector2(0.28f, 0.93f);
+        prt.sizeDelta = new Vector2(440f, 34f);
+        pHud.GetComponent<Image>().color = new Color(0.1f, 0.1f, 0.1f, 0.8f);
+        var pFill = new GameObject("Fill", typeof(Image));
+        pFill.transform.SetParent(pHud.transform, false);
+        var pfrt = pFill.GetComponent<RectTransform>();
+        pfrt.anchorMin = Vector2.zero; pfrt.anchorMax = Vector2.one;
+        pfrt.offsetMin = new Vector2(3, 3); pfrt.offsetMax = new Vector2(-3, -3);
+        var pimg = pFill.GetComponent<Image>();
+        pimg.color = new Color(0.3f, 0.85f, 0.3f);
+        var eHud = new GameObject("EnemyBarBG", typeof(Image));
+        eHud.transform.SetParent(canvasGO.transform, false);
+        var ert = eHud.GetComponent<RectTransform>();
+        ert.anchorMin = new Vector2(0.72f, 0.93f); ert.anchorMax = new Vector2(0.72f, 0.93f);
+        ert.sizeDelta = new Vector2(440f, 34f);
+        eHud.GetComponent<Image>().color = new Color(0.1f, 0.1f, 0.1f, 0.8f);
+        var eFill = new GameObject("Fill", typeof(Image));
+        eFill.transform.SetParent(eHud.transform, false);
+        var efrt = eFill.GetComponent<RectTransform>();
+        efrt.anchorMin = Vector2.zero; efrt.anchorMax = Vector2.one;
+        efrt.offsetMin = new Vector2(3, 3); efrt.offsetMax = new Vector2(-3, -3);
+        eFill.GetComponent<Image>().color = new Color(0.85f, 0.3f, 0.25f);
+        hud.playerBar = pimg;
+        hud.enemyBar = eFill.GetComponent<Image>();
+        hud.RegisterPlayer(100f);
+        hud.RegisterEnemy(eai.healthMax);
 
         MakeButton(canvasGO.transform, "BtnLight", "HAFIF", new Vector2(0.78f, 0.22f), 30,
             () => { var pcx = Object.FindObjectOfType<PlayerCombat>(); if (pcx != null) pcx.TryLightAttack(); });
@@ -254,7 +282,6 @@ public static class BuildCommand
             SceneManager.LoadScene(0);
         });
 
-        // ZAFER / YENILGI panelleri
         var victory = MakePanel(canvasGO.transform, "VictoryPanel", "ZAFER",
             "Dusmani yendin!\nIlk duello tamam.");
         MakeButton(victory.transform, "BtnRetry", "TEKRAR", new Vector2(0.5f, 0.3f), 40,
@@ -268,6 +295,6 @@ public static class BuildCommand
             () => SceneManager.LoadScene(0));
 
         EditorSceneManager.SaveScene(scene, ArenaScenePath);
-        Debug.Log("[Flow] Arena sahnesi: dusman AI + canlar + paneller eklendi");
+        Debug.Log("[Flow] Arena sahnesi: HUD + dusman AI + paneller tamam");
     }
 }
