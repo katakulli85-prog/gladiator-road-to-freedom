@@ -8,6 +8,7 @@ public static class HapticManager
     public static void Vibrate(int milliseconds)
     {
         if (!Enabled) return;
+
 #if UNITY_ANDROID && !UNITY_EDITOR
         try
         {
@@ -20,8 +21,11 @@ public static class HapticManager
                     using (var cls = new AndroidJavaClass("android.os.VibrationEffect"))
                     {
                         int amp = (int)Mathf.Clamp(80f * Intensity, 1f, 255f);
-                        using (var eff = cls.CallStatic<AndroidJavaObject>("createOneShot",
-                            Mathf.Clamp((int)(milliseconds * Intensity), 10, 500), amp))
+
+                        using (var eff = cls.CallStatic<AndroidJavaObject>(
+                            "createOneShot",
+                            Mathf.Clamp((int)(milliseconds * Intensity), 10, 500),
+                            amp))
                         {
                             vib.Call("vibrate", eff);
                             return;
@@ -29,14 +33,23 @@ public static class HapticManager
                     }
                 }
                 catch { }
-                vib.Call("vibrate", Mathf.Clamp((int)(milliseconds * Intensity), 10, 500));
+
+                vib.Call("vibrate",
+                    Mathf.Clamp((int)(milliseconds * Intensity), 10, 500));
             }
         }
-        catch (System.Exception e) { Debug.LogWarning("[Haptic] " + e.Message); }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning("[Haptic] " + e.Message);
+        }
 #endif
     }
+
     public static void LightHit() => Vibrate(15);
     public static void HeavyHit() => Vibrate(60);
     public static void Hurt() => Vibrate(45);
     public static void Block() => Vibrate(30);
+
+    // Kritik darbe veya tehlike anında daha güçlü titreşim.
+    public static void Critical() => Vibrate(100);
 }
