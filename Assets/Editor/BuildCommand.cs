@@ -180,9 +180,20 @@ public static class BuildCommand
         player.transform.position = new Vector3(0f, 1f, 0f);
         player.GetComponent<Renderer>().sharedMaterial = MakeMat(new Color(0.75f, 0.55f, 0.35f));
         player.AddComponent<PlayerMotor>();
+        player.AddComponent<PlayerCombat>();
         var playerCollider = player.GetComponent<CapsuleCollider>();
         if (playerCollider != null) DestroyImmediate(playerCollider, true);
 
+
+        // Test hedefi
+        var dummy = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        dummy.name = "TestDummy";
+        dummy.transform.position = new Vector3(0f, 1f, 3f);
+        dummy.GetComponent<Renderer>().sharedMaterial = MakeMat(new Color(0.5f, 0.2f, 0.2f));
+        dummy.AddComponent<TestDummy>();
+        var dc = dummy.GetComponent<CapsuleCollider>();
+        if (dc != null) DestroyImmediate(dc, true);
+        dummy.AddComponent<CapsuleCollider>();
         // Takip kamerasi
         var camGO = new GameObject("Main Camera", typeof(Camera), typeof(AudioListener));
         camGO.transform.position = new Vector3(0f, 3.2f, -5.2f);
@@ -214,6 +225,12 @@ public static class BuildCommand
 
         MakeLabel(canvasGO.transform, "ArenaText", "ARENA - HAREKET TESTI (Joystick ile yuru)", new Vector2(0.5f, 1f), 34, Color.white);
 
+
+        // Saldiri butonlari (sag alt)
+        MakeButton(canvasGO.transform, "BtnLight", "HAFIF", new Vector2(0.78f, 0.22f), 30,
+            () => { var pc = GameObject.FindObjectOfType<PlayerCombat>(); if (pc != null) pc.TryLightAttack(); });
+        MakeButton(canvasGO.transform, "BtnHeavy", "AGIR", new Vector2(0.90f, 0.22f), 30,
+            () => { var pc = GameObject.FindObjectOfType<PlayerCombat>(); if (pc != null) pc.TryHeavyAttack(); });
         var btnGO = new GameObject("BtnBackMenu", typeof(Button), typeof(Image));
         btnGO.transform.SetParent(canvasGO.transform, false);
         var rt = btnGO.GetComponent<RectTransform>();
