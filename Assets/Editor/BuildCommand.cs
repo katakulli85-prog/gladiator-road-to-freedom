@@ -22,6 +22,7 @@ public static class BuildCommand
         BuildMenuScene();
         BuildArenaScene();
 
+        EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(MenuScenePath, true), new EditorBuildSettingsScene(ArenaScenePath, true) };
         Directory.CreateDirectory("build/Android");
         var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
         {
