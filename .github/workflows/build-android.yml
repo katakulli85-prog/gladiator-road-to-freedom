@@ -10,8 +10,9 @@ env:
 jobs:
   build:
     name: Personal lisans al + APK derle
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # ubuntu-latest 19 Ekim 2026'da Ubuntu 26'ya geciyor; surum sabitlendi.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
     steps:
       - name: Disk boslugu ac
         shell: bash
@@ -130,7 +131,10 @@ jobs:
               echo "BUILD_EXIT=$RC"
               if [ -f /project/build.log ]; then
                 echo "=== DERLEME HATALARI ==="
-                grep -iE "error CS|exception|abort" /project/build.log | tail -n 40 || true
+                # Ilk anlamli hata: C# derleme, Gradle, build raporu
+                grep -nE "error CS[0-9]+|Exception|BuildFailedException|Build Failed|FAILURE:|What went wrong|Gradle build failed|CommandInvokationFailure|Error building Player|\[Bootstrap\] Sonuc" /project/build.log | head -n 60 || true
+                echo "=== LOG SONU (son 40 satir) ==="
+                tail -n 40 /project/build.log || true
                 echo "=== OYUN AKISI ==="
                 grep -E "\[Bootstrap\]|\[Flow\]" /project/build.log || true
               fi
@@ -143,6 +147,25 @@ jobs:
                 | grep -q . || { echo "HATA: APK bulunamadi."; exit 1; }
               echo "APK dosyasi bulundu."
             '
+
+      - name: build.log icindeki e-postalari maskele
+        if: failure()
+        shell: bash
+        env:
+          E: ${{ secrets.UNITY_EMAIL }}
+        run: |
+          [ -f build.log ] || exit 0
+          sudo chown "$(id -u)" build.log || true
+          perl -pi -e 's/\Q$ENV{E}\E/***/g if length $ENV{E}; s/[\w.+-]+@[\w-]+\.[\w.-]+/***@***/g' build.log
+
+      - name: Unity build.log yukle (hata ayiklama)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-build-log
+          path: build.log
+          retention-days: 7
+          if-no-files-found: warn
 
       - name: APK artifact yukle
         uses: actions/upload-artifact@v4
