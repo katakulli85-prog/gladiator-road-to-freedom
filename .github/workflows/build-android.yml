@@ -103,7 +103,7 @@ jobs:
           if-no-files-found: error
 
       - name: Docker imaj cache KAYDET (ilk kosuda)
-        if: env.IMAJ_TAR_KAYDEDILDI == '1'
+        if: env.IMAGE_SAVED == '1'
         uses: actions/cache/save@v4
         with:
           path: /tmp/unity-image.tar
