@@ -363,3 +363,22 @@ public static class BuildCommand
         Debug.Log("[Flow] Arena sahnesi: HUD + dusman AI + paneller tamam");
     }
 }
+        Directory.CreateDirectory("Assets/Plugins/Android");
+        System.IO.File.WriteAllText("Assets/Plugins/Android/AndroidManifest.xml",
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
+            "<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\">\n" +
+            "    <uses-permission android:name=\"android.permission.VIBRATE\" />\n" +
+            "    <uses-permission android:name=\"android.permission.INTERNET\" />\n" +
+            "    <application>\n" +
+            "        <activity android:name=\"com.unity3d.player.UnityPlayerActivity\"\n" +
+            "                  android:screenOrientation=\"sensorLandscape\"\n" +
+            "                  android:configChanges=\"orientation|screenSize|screenLayout|keyboardHidden\"\n" +
+            "                  android:theme=\"@style/UnityThemeSelector\">\n" +
+            "            <intent-filter>\n" +
+            "                <action android:name=\"android.intent.action.MAIN\" />\n" +
+            "                <category android:name=\"android.intent.category.LAUNCHER\" />\n" +
+            "            </intent-filter>\n" +
+            "            <meta-data android:name=\"unityplayer.UnityActivity\" android:value=\"true\" />\n" +
+            "        </activity>\n" +
+            "    </application>\n" +
+            "</manifest>");
