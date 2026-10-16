@@ -10,22 +10,28 @@ public class EnemyAI : MonoBehaviour
     public float healthMax = 60f;
     public Transform target;
     public GameObject victoryPanel;
-
     float cooldown;
     bool dead;
+    float stunTimer;
+
+    public void Stun(float dur)
+    {
+        stunTimer = dur;
+        HapticManager.Critical();
+        ScreenShake.Shake(0.1f, 0.15f);
+    }
 
     void Update()
     {
         if (dead || target == null) return;
+        if (stunTimer > 0) { stunTimer -= Time.deltaTime; return; }
         cooldown -= Time.deltaTime;
-        Vector3 toTarget = target.position - transform.position;
-        toTarget.y = 0f;
-        float dist = toTarget.magnitude;
+        Vector3 toT = target.position - transform.position; toT.y = 0f;
+        float dist = toT.magnitude;
         if (dist > attackRange)
         {
-            Vector3 dir = toTarget.normalized;
-            transform.position += dir * moveSpeed * Time.deltaTime;
-            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(dir), 8f * Time.deltaTime);
+            transform.position += toT.normalized * moveSpeed * Time.deltaTime;
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(toT.normalized), 8f * Time.deltaTime);
         }
         else if (cooldown <= 0)
         {

@@ -247,8 +247,9 @@ public static class BuildCommand
         if (pc != null) UnityEngine.Object.DestroyImmediate(pc, true);
         player.AddComponent<CharacterController>();
         player.AddComponent<PlayerMotor>();
-        player.AddComponent<PlayerCombat>();
+        var pcombat = player.AddComponent<PlayerCombat>();
         var phealth = player.AddComponent<PlayerHealth>();
+        phealth.combat = pcombat;
 
         var enemy = GameObject.CreatePrimitive(PrimitiveType.Capsule);
         enemy.name = "Enemy";
@@ -321,6 +322,8 @@ public static class BuildCommand
             () => { var pcx = Object.FindObjectOfType<PlayerCombat>(); if (pcx != null) pcx.TryLightAttack(); });
         MakeButton(canvasGO.transform, "BtnHeavy", "AGIR", new Vector2(0.90f, 0.22f), 30,
             () => { var pcx = Object.FindObjectOfType<PlayerCombat>(); if (pcx != null) pcx.TryHeavyAttack(); });
+        MakeButton(canvasGO.transform, "BtnParry", "PARRY", new Vector2(0.78f, 0.10f), 28,
+            () => { var pcx = Object.FindObjectOfType<PlayerCombat>(); if (pcx != null) pcx.TryParry(); });
 
         var backGO = new GameObject("BtnBackMenu", typeof(Button), typeof(Image));
         backGO.transform.SetParent(canvasGO.transform, false);
