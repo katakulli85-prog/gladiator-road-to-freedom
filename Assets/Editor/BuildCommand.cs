@@ -14,6 +14,7 @@ public static class BuildCommand
 
     public static void PerformBuild()
     {
+        Directory.CreateDirectory("Assets/_Project/Scenes");
         Debug.Log("[Bootstrap] Faz1 APK derlemesi basliyor...");
         EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTarget.Android);
         ApplyPlayerSettings();
