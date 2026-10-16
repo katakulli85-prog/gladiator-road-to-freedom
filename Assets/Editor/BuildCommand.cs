@@ -258,14 +258,14 @@ public static class BuildCommand
         eai.target = player.transform;
 
         var camGO = new GameObject("Main Camera", typeof(Camera), typeof(AudioListener));
-        camGO.transform.position = new Vector3(0f, 3.2f, -5.2f);
+        camGO.transform.position = new Vector3(0f, 2.0f, -4.0f);
         var camScript = camGO.AddComponent<ThirdPersonCamera>();
         camScript.target = player.transform;
         camGO.AddComponent<ScreenShake>();
 
         var lightGO = new GameObject("Directional Light", typeof(Light));
         lightGO.GetComponent<Light>().type = LightType.Directional;
-        lightGO.GetComponent<Light>().intensity = 1.2f;
+        lightGO.GetComponent<Light>().intensity = 0.9f;
         lightGO.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
 
         var canvasGO = new GameObject("Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));

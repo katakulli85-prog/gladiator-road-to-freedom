@@ -4,8 +4,8 @@ public class EnemyAI : MonoBehaviour
 {
     public float moveSpeed = 2.4f;
     public float attackRange = 1.7f;
-    public float attackCooldown = 1.2f;
-    public float attackDamage = 10f;
+    public float attackCooldown = 1.6f;
+    public float attackDamage = 7f;
     public float health = 60f;
     public float healthMax = 60f;
     public Transform target;

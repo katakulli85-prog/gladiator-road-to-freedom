@@ -5,7 +5,7 @@ using UnityEngine;
 public class ThirdPersonCamera : MonoBehaviour
 {
     public Transform target;
-    public Vector3 offset = new Vector3(0f, 3.2f, -5.2f);
+    public Vector3 offset = new Vector3(0f, 2.0f, -4.0f);
     public float followSpeed = 8f;
 
     void LateUpdate()
