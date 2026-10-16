@@ -12,15 +12,31 @@ jobs:
     name: Personal lisans al + APK derle
     runs-on: ubuntu-latest
     timeout-minutes: 60
+
     steps:
-      - name: Disk boslugu ac (zorunlu - imaj icin)
+      - name: Disk boslugu ac
+        shell: bash
         run: |
-          echo "ONCE:"; df -h / | tail -1
+          echo "ONCE:"
+          df -h / | tail -1
+
           sudo swapoff -a || true
           sudo rm -f /swapfile
-          sudo rm -rf /usr/share/dotnet /usr/share/swift /usr/share/miniconda /usr/local/lib/android /opt/ghc /usr/local/share/boost /usr/lib/jvm /opt/hostedtoolcache 2>/dev/null || true
+
+          sudo rm -rf \
+            /usr/share/dotnet \
+            /usr/share/swift \
+            /usr/share/miniconda \
+            /usr/local/lib/android \
+            /opt/ghc \
+            /usr/local/share/boost \
+            /usr/lib/jvm \
+            /opt/hostedtoolcache 2>/dev/null || true
+
           sudo apt-get clean >/dev/null 2>&1 || true
-          echo "SONRA:"; df -h / | tail -1
+
+          echo "SONRA:"
+          df -h / | tail -1
 
       - name: Depoyu al
         uses: actions/checkout@v4
@@ -33,65 +49,178 @@ jobs:
           restore-keys: |
             gladiator-Library-Android-
 
-      - name: Docker imaj cache GERI YUKLE
+      - name: Docker imaj cache geri yukle
         id: imgcache
         uses: actions/cache/restore@v4
         with:
           path: /tmp/unity-image.tar
           key: unity-img-android3-v1
 
-      - name: Imaji hazirla (load veya pull)
+      - name: Imaji hazirla
+        shell: bash
         run: |
+          set -euo pipefail
+
           if [ -f /tmp/unity-image.tar ]; then
+            echo "Docker imaji cache dosyasindan yukleniyor."
+
             T0=$(date +%s)
             docker load -i /tmp/unity-image.tar
             T1=$(date +%s)
+
             echo "LOAD_SURE=$((T1-T0))" >> "$GITHUB_ENV"
             echo "YOL=cache" >> "$GITHUB_ENV"
           else
+            echo "Docker imaji indiriliyor."
+
             T0=$(date +%s)
             docker pull "$UNITY_IMAGE"
             T1=$(date +%s)
+
             echo "PULL_SURE=$((T1-T0))" >> "$GITHUB_ENV"
             echo "YOL=pull" >> "$GITHUB_ENV"
+
             docker save "$UNITY_IMAGE" -o /tmp/unity-image.tar
-                        echo "IMAGE_SAVED=1" >> "$GITHUB_ENV"
+            echo "IMAGE_SAVED=1" >> "$GITHUB_ENV"
           fi
 
-      - name: Imaj dogrulama
-        run: docker images | grep "unityci/editor" && echo "IMAJ OK"
+      - name: Docker imajini dogrula
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          docker image inspect "$UNITY_IMAGE" >/dev/null
+
+          echo "Unity imaji dogrulandi:"
+          docker image inspect \
+            --format '{{.RepoTags}}' "$UNITY_IMAGE"
 
       - name: Secret kontrolu
+        shell: bash
         env:
           U: ${{ secrets.UNITY_EMAIL }}
           P: ${{ secrets.UNITY_PASSWORD }}
         run: |
-          [ -z "$U" ] || [ -z "$P" ] && { echo "::error::Secrets eksik"; exit 1; }
-          echo "Secretlar OK"
+          set -euo pipefail
 
-      - name: Personal lisans + APK derle
+          if [ -z "$U" ] || [ -z "$P" ]; then
+            echo "::error::UNITY_EMAIL veya UNITY_PASSWORD secret eksik."
+            exit 1
+          fi
+
+          echo "Secret varligi kontrol edildi."
+
+      - name: Proje ve BuildCommand kontrolu
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ ! -f "ProjectSettings/ProjectVersion.txt" ]; then
+            echo "::error::Unity projesi bulunamadi."
+            exit 1
+          fi
+
+          if [ ! -f "Packages/manifest.json" ]; then
+            echo "::error::Packages/manifest.json bulunamadi."
+            exit 1
+          fi
+
+          if ! grep -R -l \
+            --include='*.cs' \
+            'class BuildCommand' Assets; then
+            echo "::error::Assets icinde BuildCommand sinifi bulunamadi."
+            exit 1
+          fi
+
+          echo "Temel proje dosyalari kontrol edildi."
+
+      - name: Personal lisans ve APK derleme
+        shell: bash
         env:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         run: |
+          set -euo pipefail
+
+          mkdir -p build/Android
+
           docker run --rm \
-            -v "$PWD":/project -w /project \
-            -e UNITY_EMAIL -e UNITY_PASSWORD \
-            "$UNITY_IMAGE" bash -c '
+            -v "$PWD:/project" \
+            -w /project \
+            -e UNITY_EMAIL \
+            -e UNITY_PASSWORD \
+            "$UNITY_IMAGE" \
+            bash -lc '
+              set -uo pipefail
+
+              UNITY="/opt/unity/Editor/Unity"
               LC="/opt/unity/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client"
-              echo "=== 1/3: LISANS ==="
-              xvfb-run -ae /dev/stdout "$LC" --activate-all --include-personal \
-                --username "$UNITY_EMAIL" --password "$UNITY_PASSWORD" || true
-              echo "=== 3/3: APK DERLENIYOR ==="
-              xvfb-run -ae /dev/stdout /opt/unity/Editor/Unity -batchmode -nographics -quit \
+
+              if [ ! -x "$UNITY" ]; then
+                echo "HATA: Unity Editor bulunamadi: $UNITY"
+                exit 1
+              fi
+
+              echo "=== 1/3: LISANS KONTROLU ==="
+
+              if [ -x "$LC" ]; then
+                xvfb-run -a "$LC" \
+                  --activate-all \
+                  --include-personal \
+                  --username "$UNITY_EMAIL" \
+                  --password "$UNITY_PASSWORD" || {
+                    echo "Lisans araci etkinlestirme istegini basarisiz bildirdi."
+                    echo "Unity derleme asamasinda lisans durumunu kontrol edecek."
+                  }
+              else
+                echo "Lisans istemcisi bu konumda bulunamadi."
+                echo "Unity derlemesi lisans durumunu dogrulayacak."
+              fi
+
+              echo "=== 2/3: APK DERLEME ==="
+
+              set +e
+
+              xvfb-run -a "$UNITY" \
+                -batchmode \
+                -quit \
                 -projectPath /project \
                 -executeMethod BuildCommand.PerformBuild \
                 -logFile /project/build.log
+
               RC=$?
+
+              set -e
+
               echo "BUILD_EXIT=$RC"
-              grep -iE "error|exception|abort|fail" /project/build.log | head -n 40 || true
-              grep -E "\[Bootstrap\]|\[Flow\]" /project/build.log || true
-              exit $RC
+
+              if [ -f /project/build.log ]; then
+                echo "=== DERLEME HATALARI ==="
+                grep -iE \
+                  "error|exception|abort|failed|failure" \
+                  /project/build.log | tail -n 60 || true
+
+                echo "=== OYUN AKISI LOG KAYITLARI ==="
+                grep -E \
+                  "\[Bootstrap\]|\[Flow\]" \
+                  /project/build.log || true
+              fi
+
+              if [ "$RC" -ne 0 ]; then
+                echo "Unity derlemesi basarisiz."
+                exit "$RC"
+              fi
+
+              echo "=== 3/3: APK KONTROLU ==="
+
+              if ! find /project/build/Android \
+                -maxdepth 1 -type f -name "*.apk" \
+                -print -quit | grep -q .; then
+                echo "HATA: APK dosyasi uretilmedi."
+                exit 1
+              fi
+
+              echo "APK dosyasi bulundu."
             '
 
       - name: APK artifact yukle
@@ -102,15 +231,20 @@ jobs:
           retention-days: 14
           if-no-files-found: error
 
-      - name: Docker imaj cache KAYDET (ilk kosuda)
-        if: env.IMAGE_SAVED == '1'
+      - name: Docker imaj cache kaydet
+        if: success() && env.IMAGE_SAVED == '1'
         uses: actions/cache/save@v4
         with:
           path: /tmp/unity-image.tar
           key: unity-img-android3-v1
 
       - name: Sure raporu
+        if: always()
+        shell: bash
         run: |
-          echo "## Sure Raporu" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Imaj yolu: ${{ env.YOL }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Load/Pull suresi: (log satirlarinda)" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## Sure Raporu"
+            echo "- Imaj yolu: ${YOL:-bilinmiyor}"
+            echo "- Docker load suresi: ${LOAD_SURE:-hesaplanmadi} saniye"
+            echo "- Docker pull suresi: ${PULL_SURE:-hesaplanmadi} saniye"
+          } >> "$GITHUB_STEP_SUMMARY"
