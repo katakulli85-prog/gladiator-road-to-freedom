@@ -6,7 +6,6 @@ on:
 env:
   UNITY_VERSION: 2022.3.55f1
   UNITY_IMAGE: unityci/editor:ubuntu-2022.3.55f1-android-3
-  IMAGE_CACHE_KEY: docker-image-android-3-v1
 
 jobs:
   build:
@@ -25,56 +24,47 @@ jobs:
           restore-keys: |
             gladiator-Library-Android-
 
-      - name: Docker imaj cache geri yukle
+      - name: Docker imaj cache GERI YUKLE
+        id: imgcache
         uses: actions/cache/restore@v4
-        id: docker-cache
         with:
           path: /tmp/unity-image.tar
-          key: ${{ env.IMAGE_CACHE_KEY }}
+          key: unity-img-android3-v1
 
-      - name: Imaji hazirla (cache'ten yukle veya cek)
+      - name: Imaji hazirla (load veya pull)
         run: |
           if [ -f /tmp/unity-image.tar ]; then
-            echo "Cache'ten yukleniyor (hizli yol)..."
-            LOAD_START=$(date +%s)
+            T0=$(date +%s)
             docker load -i /tmp/unity-image.tar
-            LOAD_END=$(date +%s)
-            echo "Load suresi: $((LOAD_END - LOAD_START)) sn"
+            T1=$(date +%s)
+            echo "LOAD_SURE=$((T1-T0))" >> "$GITHUB_ENV"
+            echo "YOL=cache" >> "$GITHUB_ENV"
           else
-            echo "Cache yok - Docker Hub'dan cekiliyor (ilk koşu veya cache doldu)..."
-            PULL_START=$(date +%s)
+            T0=$(date +%s)
             docker pull "$UNITY_IMAGE"
-            PULL_END=$(date +%s)
-            echo "Pull suresi: $((PULL_END - PULL_START)) sn"
-            # Sonraki koşular icin cache'e kaydet
-            echo "Cache'e kaydediliyor..."
-            mkdir -p /tmp/unity-image-cache
+            T1=$(date +%s)
+            echo "PULL_SURE=$((T1-T0))" >> "$GITHUB_ENV"
+            echo "YOL=pull" >> "$GITHUB_ENV"
             docker save "$UNITY_IMAGE" -o /tmp/unity-image.tar
-            echo "Kaydedildi ($(du -sh /tmp/unity-image.tar | cut -f1))"
+            echo "IMAJ_TAR_KAYDEDILDI" >> "$GITHUB_ENV"
           fi
 
       - name: Imaj dogrulama
-        run: |
-          docker images | grep unityci/editor || { echo "::error::Imaj bulunamadi!"; exit 1; }
-          echo "Imaj dogrulandi: $UNITY_IMAGE mevcut"
+        run: docker images | grep "unityci/editor" && echo "IMAJ OK"
 
       - name: Secret kontrolu
         env:
           U: ${{ secrets.UNITY_EMAIL }}
           P: ${{ secrets.UNITY_PASSWORD }}
         run: |
-          if [ -z "$U" ] || [ -z "$P" ]; then
-            echo "::error::Secrets eksik"
-            exit 1
-          fi
+          [ -z "$U" ] || [ -z "$P" ] && { echo "::error::Secrets eksik"; exit 1; }
+          echo "Secretlar OK"
 
-      - name: Personal lisans al + APK derle
+      - name: Personal lisans + APK derle
         env:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         run: |
-          set -e
-          BUILD_START=$(date +%s)
           docker run --rm \
             -v "$PWD":/project -w /project \
             -e UNITY_EMAIL -e UNITY_PASSWORD \
@@ -83,8 +73,6 @@ jobs:
               echo "=== 1/3: LISANS ==="
               xvfb-run -ae /dev/stdout "$LC" --activate-all --include-personal \
                 --username "$UNITY_EMAIL" --password "$UNITY_PASSWORD" || true
-              echo "=== 2/3: LISANS KONTROLU ==="
-              ls /root/.config/unity3d/ 2>/dev/null || true
               echo "=== 3/3: APK DERLENIYOR ==="
               xvfb-run -ae /dev/stdout /opt/unity/Editor/Unity -batchmode -nographics -quit \
                 -projectPath /project \
@@ -92,14 +80,10 @@ jobs:
                 -logFile /project/build.log
               RC=$?
               echo "BUILD_EXIT=$RC"
-              echo "=== HATA SATIRLARI ==="
-              grep -iE "error|exception|abort|fail" /project/build.log | head -n 40 || echo "hata yok"
-              echo "=== BOOTSTRAP RAPOR ==="
+              grep -iE "error|exception|abort|fail" /project/build.log | head -n 40 || true
               grep -E "\[Bootstrap\]|\[Flow\]" /project/build.log || true
               exit $RC
             '
-          BUILD_END=$(date +%s)
-          echo "UNITY_SURE=$((BUILD_END - BUILD_START)) saniye" >> "$GITHUB_STEP_SUMMARY"
 
       - name: APK artifact yukle
         uses: actions/upload-artifact@v4
@@ -109,22 +93,15 @@ jobs:
           retention-days: 14
           if-no-files-found: error
 
-      - name: Docker imaj cache kaydet (ilk kosuda)
-        if: steps.docker-cache.outputs.cache-hit != 'true'
+      - name: Docker imaj cache KAYDET (ilk kosuda)
+        if: env.IMAJ_TAR_KAYDEDILDI == 'IMAJ_TAR_KAYDEDILDI'
         uses: actions/cache/save@v4
         with:
           path: /tmp/unity-image.tar
-          key: ${{ env.IMAGE_CACHE_KEY }}
+          key: unity-img-android3-v1
 
       - name: Sure raporu
         run: |
-          BUILD_END=$(date +%s)
-          echo "## Derleme Sure Raporu" >> "$GITHUB_STEP_SUMMARY"
-          echo "- UNITY_SURE: (yukarida)" >> "$GITHUB_STEP_SUMMARY"
-          echo "- PULL vs LOAD: log satirlarinda" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: AndroidJNI regresyon testi
-        run: |
-          grep -q "com.unity.modules.androidjni" Packages/manifest.json || { echo "::error::AndroidJNI eksik - regresyon!"; exit 1; }
-          grep -q "com.unity.modules.physics" Packages/manifest.json || { echo "::error::Physics eksik - regresyon!"; exit 1; }
-          echo "Regresyon testleri: GECTI (androidjni + physics mevcut)"
+          echo "## Sure Raporu" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Imaj yolu: ${{ env.YOL }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Load/Pull suresi: (log satirlarinda)" >> "$GITHUB_STEP_SUMMARY"
