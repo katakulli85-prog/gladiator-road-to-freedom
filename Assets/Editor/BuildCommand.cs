@@ -45,7 +45,7 @@ public static class BuildCommand
     {
         PlayerSettings.companyName = "katakulli85-prog";
         PlayerSettings.productName = "Gladiator Road to Freedom";
-        PlayerSettings.bundleVersion = "0.3.0";
+        PlayerSettings.bundleVersion = "0.4.0";
         PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.katakulli85prog.gladiatorrtf");
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.Mono2x);
         PlayerSettings.Android.minSdkVersion = (AndroidSdkVersions)24;
@@ -65,6 +65,21 @@ public static class BuildCommand
             new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
             Debug.Log("[UI] EventSystem olusturuldu");
         }
+    }
+
+    static Font LoadBuiltinFont()
+    {
+        Font font = null;
+        try { font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); } catch { }
+        if (font == null) { try { font = Resources.GetBuiltinResource<Font>("Arial.ttf"); } catch { } }
+        return font;
+    }
+
+    static Material MakeMat(Color color)
+    {
+        var mat = new Material(Shader.Find("Standard"));
+        mat.color = color;
+        return mat;
     }
 
     static GameObject MakeLabel(Transform parent, string name, string text,
@@ -91,8 +106,8 @@ public static class BuildCommand
         go.transform.SetParent(parent, false);
         var rt = go.GetComponent<RectTransform>();
         rt.anchorMin = anchor; rt.anchorMax = anchor;
-        rt.sizeDelta = new Vector2(520f, 100f);
-        go.GetComponent<Image>().color = new Color(0.2f, 0.15f, 0.1f, 0.9f);
+        rt.sizeDelta = new Vector2(420f, 90f);
+        go.GetComponent<Image>().color = new Color(0.25f, 0.2f, 0.12f, 0.95f);
 
         var lblGO = new GameObject("Label", typeof(Text));
         lblGO.transform.SetParent(go.transform, false);
@@ -108,19 +123,18 @@ public static class BuildCommand
         return go;
     }
 
-    static Material MakeMat(Color color)
+    static GameObject MakePanel(Transform parent, string name, string title, string body)
     {
-        var mat = new Material(Shader.Find("Standard"));
-        mat.color = color;
-        return mat;
-    }
-
-    static Font LoadBuiltinFont()
-    {
-        Font font = null;
-        try { font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); } catch { }
-        if (font == null) { try { font = Resources.GetBuiltinResource<Font>("Arial.ttf"); } catch { } }
-        return font;
+        var panel = new GameObject(name, typeof(Image));
+        panel.transform.SetParent(parent, false);
+        panel.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.93f);
+        var art = panel.GetComponent<RectTransform>();
+        art.anchorMin = Vector2.zero; art.anchorMax = Vector2.one;
+        art.offsetMin = Vector2.zero; art.offsetMax = Vector2.zero;
+        MakeLabel(panel.transform, "PTitle", title, new Vector2(0.5f, 0.72f), 64, new Color(0.85f, 0.68f, 0.3f));
+        MakeLabel(panel.transform, "PBody", body, new Vector2(0.5f, 0.55f), 40, Color.white);
+        panel.SetActive(false);
+        return panel;
     }
 
     static void BuildMenuScene()
@@ -145,18 +159,10 @@ public static class BuildCommand
         MakeButton(canvasGO.transform, "BtnNew", "YENI OYUN", new Vector2(0.5f, 0.46f), 54, menuUI.OnNewGame);
         MakeButton(canvasGO.transform, "BtnAbout", "HAKKINDA", new Vector2(0.5f, 0.33f), 42, menuUI.OnAbout);
 
-        var about = new GameObject("AboutPanel", typeof(Image));
-        about.transform.SetParent(canvasGO.transform, false);
-        about.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.92f);
-        var art = about.GetComponent<RectTransform>();
-        art.anchorMin = Vector2.zero; art.anchorMax = Vector2.one;
-        art.offsetMin = Vector2.zero; art.offsetMax = Vector2.zero;
-        MakeLabel(about.transform, "AboutTitle", "GLADIATOR: ROAD TO FREEDOM", new Vector2(0.5f, 0.72f), 52, Color.white);
-        MakeLabel(about.transform, "AboutText",
-            "Created by Orhan Biyik\n\nKole bir gladyator olarak basla,\n100 savasi kazanarak ozgurlugunu kazan.\n\nSurum v0.3.0 - Faz 1 P2",
-            new Vector2(0.5f, 0.5f), 38, new Color(0.9f, 0.85f, 0.7f));
+        var about = MakePanel(canvasGO.transform, "AboutPanel",
+            "GLADIATOR: ROAD TO FREEDOM",
+            "Created by Orhan Biyik\n\nKole bir gladyator olarak basla,\n100 savasi kazanarak ozgurlugunu kazan.\n\nSurum v0.4.0 - Faz 1 P2");
         MakeButton(about.transform, "BtnCloseAbout", "KAPAT", new Vector2(0.5f, 0.15f), 42, menuUI.OnCloseAbout);
-        about.SetActive(false);
 
         var flowGO = new GameObject("GameFlow", typeof(GameFlowRunner));
 
@@ -168,37 +174,37 @@ public static class BuildCommand
     {
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
-        // Zemin
         var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
         ground.name = "Ground";
         ground.transform.localScale = new Vector3(8f, 1f, 8f);
         ground.GetComponent<Renderer>().sharedMaterial = MakeMat(new Color(0.72f, 0.63f, 0.47f));
 
-        // OYUNCU - kapsul gladyator (sonra gercek model gelir)
+        // OYUNCU
         var player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
         player.name = "Player";
         player.transform.position = new Vector3(0f, 1f, 0f);
         player.GetComponent<Renderer>().sharedMaterial = MakeMat(new Color(0.75f, 0.55f, 0.35f));
+        var pc = player.GetComponent<CapsuleCollider>();
+        if (pc != null) UnityEngine.Object.DestroyImmediate(pc, true);
+        player.AddComponent<CharacterController>();
         player.AddComponent<PlayerMotor>();
         player.AddComponent<PlayerCombat>();
-        var playerCollider = player.GetComponent<CapsuleCollider>();
-        if (playerCollider != null) UnityEngine.Object.DestroyImmediate(playerCollider, true);
+        player.AddComponent<PlayerHealth>();
 
+        // DUSMAN (AI'li)
+        var enemy = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        enemy.name = "Enemy";
+        enemy.transform.position = new Vector3(0f, 1f, 4f);
+        enemy.GetComponent<Renderer>().sharedMaterial = MakeMat(new Color(0.45f, 0.18f, 0.18f));
+        var eai = enemy.AddComponent<EnemyAI>();
+        eai.target = player.transform;
 
-        // Test hedefi
-        var dummy = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-        dummy.name = "TestDummy";
-        dummy.transform.position = new Vector3(0f, 1f, 3f);
-        dummy.GetComponent<Renderer>().sharedMaterial = MakeMat(new Color(0.5f, 0.2f, 0.2f));
-        dummy.AddComponent<TestDummy>();
-        var dc = dummy.GetComponent<CapsuleCollider>();
-        if (dc != null) UnityEngine.Object.DestroyImmediate(dc, true);
-        dummy.AddComponent<CapsuleCollider>();
-        // Takip kamerasi
+        // Kamera + sarsinti
         var camGO = new GameObject("Main Camera", typeof(Camera), typeof(AudioListener));
         camGO.transform.position = new Vector3(0f, 3.2f, -5.2f);
         var camScript = camGO.AddComponent<ThirdPersonCamera>();
         camScript.target = player.transform;
+        camGO.AddComponent<ScreenShake>();
 
         // Isik
         var lightGO = new GameObject("Directional Light", typeof(Light));
@@ -206,7 +212,7 @@ public static class BuildCommand
         lightGO.GetComponent<Light>().intensity = 1.2f;
         lightGO.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
 
-        // HUD - joystick (sol alt)
+        // HUD
         var canvasGO = new GameObject("Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
         canvasGO.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
         var scaler = canvasGO.GetComponent<CanvasScaler>();
@@ -223,35 +229,45 @@ public static class BuildCommand
         joyRT.sizeDelta = new Vector2(240f, 240f);
         joyBG.GetComponent<Image>().color = new Color(0.2f, 0.18f, 0.12f, 0.45f);
 
-        MakeLabel(canvasGO.transform, "ArenaText", "ARENA - HAREKET TESTI (Joystick ile yuru)", new Vector2(0.5f, 1f), 34, Color.white);
-
-
-        // Saldiri butonlari (sag alt)
         MakeButton(canvasGO.transform, "BtnLight", "HAFIF", new Vector2(0.78f, 0.22f), 30,
-            () => { var pc = GameObject.FindObjectOfType<PlayerCombat>(); if (pc != null) pc.TryLightAttack(); });
+            () => { var pcx = Object.FindObjectOfType<PlayerCombat>(); if (pcx != null) pcx.TryLightAttack(); });
         MakeButton(canvasGO.transform, "BtnHeavy", "AGIR", new Vector2(0.90f, 0.22f), 30,
-            () => { var pc = GameObject.FindObjectOfType<PlayerCombat>(); if (pc != null) pc.TryHeavyAttack(); });
-        var btnGO = new GameObject("BtnBackMenu", typeof(Button), typeof(Image));
-        btnGO.transform.SetParent(canvasGO.transform, false);
-        var rt = btnGO.GetComponent<RectTransform>();
-        rt.anchorMin = new Vector2(0.92f, 0.9f); rt.anchorMax = new Vector2(0.92f, 0.9f);
-        rt.sizeDelta = new Vector2(300f, 80f);
-        btnGO.GetComponent<Image>().color = new Color(0.2f, 0.15f, 0.1f, 0.9f);
-        var lblGO = new GameObject("Label", typeof(Text));
-        lblGO.transform.SetParent(btnGO.transform, false);
-        var lbl = lblGO.GetComponent<Text>();
-        lbl.text = "MENU";
-        lbl.font = LoadBuiltinFont(); lbl.fontSize = 32; lbl.color = Color.white;
-        lbl.alignment = TextAnchor.MiddleCenter;
-        var lrt = lbl.rectTransform; lrt.anchorMin = Vector2.zero; lrt.anchorMax = Vector2.one;
-        lrt.offsetMin = Vector2.zero; lrt.offsetMax = Vector2.zero;
-        btnGO.GetComponent<Button>().onClick.AddListener(() =>
+            () => { var pcx = Object.FindObjectOfType<PlayerCombat>(); if (pcx != null) pcx.TryHeavyAttack(); });
+
+        var backGO = new GameObject("BtnBackMenu", typeof(Button), typeof(Image));
+        backGO.transform.SetParent(canvasGO.transform, false);
+        var brt = backGO.GetComponent<RectTransform>();
+        brt.anchorMin = new Vector2(0.92f, 0.9f); brt.anchorMax = new Vector2(0.92f, 0.9f);
+        brt.sizeDelta = new Vector2(280f, 70f);
+        backGO.GetComponent<Image>().color = new Color(0.2f, 0.15f, 0.1f, 0.9f);
+        var blblGO = new GameObject("Label", typeof(Text));
+        blblGO.transform.SetParent(backGO.transform, false);
+        var blbl = blblGO.GetComponent<Text>();
+        blbl.text = "MENU";
+        blbl.font = LoadBuiltinFont(); blbl.fontSize = 28; blbl.color = Color.white;
+        blbl.alignment = TextAnchor.MiddleCenter;
+        var blrt = blbl.rectTransform; blrt.anchorMin = Vector2.zero; blrt.anchorMax = Vector2.one;
+        blrt.offsetMin = Vector2.zero; blrt.offsetMax = Vector2.zero;
+        backGO.GetComponent<Button>().onClick.AddListener(() =>
         {
             Debug.Log("[Arena] Menuye donuluyor");
             SceneManager.LoadScene(0);
         });
 
+        // ZAFER / YENILGI panelleri
+        var victory = MakePanel(canvasGO.transform, "VictoryPanel", "ZAFER",
+            "Dusmani yendin!\nIlk duello tamam.");
+        MakeButton(victory.transform, "BtnRetry", "TEKRAR", new Vector2(0.5f, 0.3f), 40,
+            () => SceneManager.LoadScene(1));
+
+        var defeat = MakePanel(canvasGO.transform, "DefeatPanel", "YENILGI",
+            "Dustun... ama ayaga kalk.\n\nYuz kez dustum, yuz kez kalktim.");
+        MakeButton(defeat.transform, "BtnRetryD", "TEKRAR", new Vector2(0.5f, 0.3f), 40,
+            () => SceneManager.LoadScene(1));
+        MakeButton(defeat.transform, "BtnMenuD", "MENU", new Vector2(0.5f, 0.18f), 36,
+            () => SceneManager.LoadScene(0));
+
         EditorSceneManager.SaveScene(scene, ArenaScenePath);
-        Debug.Log("[Flow] Arena sahnesi: oyuncu + joystick + takip kamera eklendi");
+        Debug.Log("[Flow] Arena sahnesi: dusman AI + canlar + paneller eklendi");
     }
 }

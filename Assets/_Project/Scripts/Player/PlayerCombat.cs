@@ -1,7 +1,7 @@
 using UnityEngine;
 
-// Oyuncu saldiri sistemi - Temel hali (kombo/kaçınma sonraki turlarda)
-// Kurallar: tek hasar per vurus, silah temas olmadan hasar yok (6. belge)
+// Oyuncu saldiri sistemi - hedefe donus + ScreenShake + EnemyAI hasar
+// Kurallar: tek hasar per vurus, saldiri penceresi icinde tek tetik
 public class PlayerCombat : MonoBehaviour
 {
     public float lightDamage = 12f;
@@ -16,10 +16,10 @@ public class PlayerCombat : MonoBehaviour
     public float staminaRegen = 18f;
 
     float cooldownTimer;
-    float attackTimer;         // vurus penceresi acik mi
+    float attackTimer;
     float pendingDamage;
     float pendingRange;
-    bool damageDealt;          // tek hasar kurali
+    bool damageDealt;
 
     void Update()
     {
@@ -38,23 +38,14 @@ public class PlayerCombat : MonoBehaviour
             stamina = Mathf.Min(staminaMax, stamina + staminaRegen * Time.deltaTime);
     }
 
-    // Butonlardan cagrilacak (TUR 4'te HUD butonlarina baglanir)
     public void TryLightAttack()
     {
-        if (CanAttack())
-        {
-            StartAttack(lightDamage, lightRange, lightStaminaCost, 0.18f);
-            HapticManager.LightHit();
-        }
+        if (CanAttack()) StartAttack(lightDamage, lightRange, lightStaminaCost, 0.18f, 15);
     }
 
     public void TryHeavyAttack()
     {
-        if (CanAttack())
-        {
-            StartAttack(heavyDamage, heavyRange, heavyStaminaCost, 0.32f);
-            HapticManager.HeavyHit();
-        }
+        if (CanAttack()) StartAttack(heavyDamage, heavyRange, heavyStaminaCost, 0.32f, 60);
     }
 
     bool CanAttack()
@@ -62,28 +53,39 @@ public class PlayerCombat : MonoBehaviour
         return cooldownTimer <= 0 && attackTimer <= 0 && stamina >= lightStaminaCost;
     }
 
-    void StartAttack(float dmg, float range, float cost, float duration)
+    void StartAttack(float dmg, float range, float cost, float duration, int hapticMs)
     {
+        // Hedefe don (kilit v1)
+        var t = TargetLock.Nearest(transform, 8f);
+        if (t != null)
+        {
+            var dir = t.position - transform.position;
+            dir.y = 0f;
+            if (dir.sqrMagnitude > 0.01f)
+                transform.rotation = Quaternion.LookRotation(dir.normalized);
+        }
+
         stamina -= cost;
         cooldownTimer = attackCooldown;
         attackTimer = duration;
         pendingDamage = dmg;
         pendingRange = range;
         damageDealt = false;
-        Debug.Log($"[Combat] Saldiri: dmg={dmg} range={range} stamina={stamina:F0}");
+        HapticManager.Vibrate(hapticMs);
+        Debug.Log($"[Combat] Saldiri: dmg={dmg} stamina={stamina:F0}");
     }
 
     void TryDealDamage()
     {
-        // Onumuzdeki hedefi bul (basit: en yakin TestDummy, ileriye raycast sonra)
         var hits = Physics.OverlapSphere(transform.position + transform.forward * 1.2f, pendingRange);
         foreach (var h in hits)
         {
-            var dummy = h.GetComponent<TestDummy>();
-            if (dummy != null && !damageDealt)
+            var enemy = h.GetComponent<EnemyAI>();
+            if (enemy != null && !damageDealt)
             {
-                dummy.TakeDamage(pendingDamage);
+                enemy.TakeDamage(pendingDamage);
                 damageDealt = true;
+                ScreenShake.Shake(0.06f, 0.1f);
                 Debug.Log($"[Combat] Hasar verildi: {pendingDamage}");
                 break; // tek hasar kurali
             }
