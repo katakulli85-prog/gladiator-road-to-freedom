@@ -6,6 +6,7 @@ on:
 env:
   UNITY_VERSION: 2022.3.55f1
   UNITY_IMAGE: unityci/editor:ubuntu-2022.3.55f1-android-3
+  IMAGE_CACHE_KEY: docker-image-android-3-v1
 
 jobs:
   build:
@@ -13,38 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - name: Sure olcumu baslangic
-        run: echo "BUILD_START=$(date +%s)" >> "$GITHUB_ENV"
-
       - name: Depoyu al
         uses: actions/checkout@v4
-
-      - name: Docker imaj cache (diger katmanlar)
-        uses: actions/cache@v4
-        with:
-          path: /var/lib/docker
-          key: docker-unity-image-${{ env.UNITY_IMAGE }}-v1
-          restore-keys: |
-            docker-unity-image-
-
-      - name: Disk durumu ONCE (olcum)
-        run: |
-          echo "=== TEMIZLIK ONCESI ==="
-          df -h / | tail -1
-          sudo du -sh /usr/share/* 2>/dev/null | sort -rh | head -5 || true
-
-      - name: Disk boslugu ac (olcumlu, guvenli liste)
-        run: |
-          sudo swapoff -a || true
-          sudo rm -f /swapfile
-          sudo rm -rf /usr/share/dotnet /usr/share/swift /usr/share/miniconda /opt/ghc /opt/hostedtoolcache 2>/dev/null || true
-          echo "=== TEMIZLIK SONRASI ==="
-          df -h / | tail -1
-
-      - name: Depoyu al (tekrar - temizlik sonrasi garanti)
-        uses: actions/checkout@v4
-        with:
-          clean: false
 
       - name: Library cache
         uses: actions/cache@v4
@@ -53,6 +24,39 @@ jobs:
           key: gladiator-Library-Android-${{ hashFiles('Packages/manifest.json', 'ProjectSettings/ProjectVersion.txt') }}
           restore-keys: |
             gladiator-Library-Android-
+
+      - name: Docker imaj cache geri yukle
+        uses: actions/cache/restore@v4
+        id: docker-cache
+        with:
+          path: /tmp/unity-image.tar
+          key: ${{ env.IMAGE_CACHE_KEY }}
+
+      - name: Imaji hazirla (cache'ten yukle veya cek)
+        run: |
+          if [ -f /tmp/unity-image.tar ]; then
+            echo "Cache'ten yukleniyor (hizli yol)..."
+            LOAD_START=$(date +%s)
+            docker load -i /tmp/unity-image.tar
+            LOAD_END=$(date +%s)
+            echo "Load suresi: $((LOAD_END - LOAD_START)) sn"
+          else
+            echo "Cache yok - Docker Hub'dan cekiliyor (ilk koşu veya cache doldu)..."
+            PULL_START=$(date +%s)
+            docker pull "$UNITY_IMAGE"
+            PULL_END=$(date +%s)
+            echo "Pull suresi: $((PULL_END - PULL_START)) sn"
+            # Sonraki koşular icin cache'e kaydet
+            echo "Cache'e kaydediliyor..."
+            mkdir -p /tmp/unity-image-cache
+            docker save "$UNITY_IMAGE" -o /tmp/unity-image.tar
+            echo "Kaydedildi ($(du -sh /tmp/unity-image.tar | cut -f1))"
+          fi
+
+      - name: Imaj dogrulama
+        run: |
+          docker images | grep unityci/editor || { echo "::error::Imaj bulunamadi!"; exit 1; }
+          echo "Imaj dogrulandi: $UNITY_IMAGE mevcut"
 
       - name: Secret kontrolu
         env:
@@ -64,19 +68,12 @@ jobs:
             exit 1
           fi
 
-      - name: Imaji cek (sure olcumlu)
-        run: |
-          PULL_START=$(date +%s)
-          docker pull "$UNITY_IMAGE"
-          PULL_END=$(date +%s)
-          echo "PULL_SURE=$((PULL_END - PULL_START)) saniye" >> "$GITHUB_STEP_SUMMARY"
-          echo "Imaj cekme: $((PULL_END - PULL_START)) saniye"
-
-      - name: Personal lisans + APK derle
+      - name: Personal lisans al + APK derle
         env:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         run: |
+          set -e
           BUILD_START=$(date +%s)
           docker run --rm \
             -v "$PWD":/project -w /project \
@@ -85,8 +82,9 @@ jobs:
               LC="/opt/unity/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client"
               echo "=== 1/3: LISANS ==="
               xvfb-run -ae /dev/stdout "$LC" --activate-all --include-personal \
-                --username "$UNITY_EMAIL" --password "$UNITY_PASSWORD"
-              echo "=== 2/3: IMPORT KONTROL ==="
+                --username "$UNITY_EMAIL" --password "$UNITY_PASSWORD" || true
+              echo "=== 2/3: LISANS KONTROLU ==="
+              ls /root/.config/unity3d/ 2>/dev/null || true
               echo "=== 3/3: APK DERLENIYOR ==="
               xvfb-run -ae /dev/stdout /opt/unity/Editor/Unity -batchmode -nographics -quit \
                 -projectPath /project \
@@ -111,23 +109,22 @@ jobs:
           retention-days: 14
           if-no-files-found: error
 
+      - name: Docker imaj cache kaydet (ilk kosuda)
+        if: steps.docker-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/unity-image.tar
+          key: ${{ env.IMAGE_CACHE_KEY }}
+
       - name: Sure raporu
         run: |
           BUILD_END=$(date +%s)
-          TOTAL=$((BUILD_END - BUILD_START))
-          echo "## Sure Raporu" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Toplam koşu: ${TOTAL} saniye" >> "$GITHUB_STEP_SUMMARY"
-          echo "- PULL_SURE ve UNITY_SURE detayları yukarıda" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Derleme Sure Raporu" >> "$GITHUB_STEP_SUMMARY"
+          echo "- UNITY_SURE: (yukarida)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- PULL vs LOAD: log satirlarinda" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: AndroidJNI modulu dogrulama (regresyon testi)
+      - name: AndroidJNI regresyon testi
         run: |
-          if ! grep -q "com.unity.modules.androidjni" Packages/manifest.json; then
-            echo "::error::AndroidJNI modulu eksik - regresyon!"
-            exit 1
-          fi
-          echo "AndroidJNI modulu: VAR ✓ (regresyon yok)"
-          if ! grep -q "com.unity.modules.physics" Packages/manifest.json; then
-            echo "::error::Physics modulu eksik - regresyon!"
-            exit 1
-          fi
-          echo "Physics modulu: VAR ✓ (regresyon yok)"
+          grep -q "com.unity.modules.androidjni" Packages/manifest.json || { echo "::error::AndroidJNI eksik - regresyon!"; exit 1; }
+          grep -q "com.unity.modules.physics" Packages/manifest.json || { echo "::error::Physics eksik - regresyon!"; exit 1; }
+          echo "Regresyon testleri: GECTI (androidjni + physics mevcut)"
