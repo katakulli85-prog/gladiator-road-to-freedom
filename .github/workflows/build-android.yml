@@ -55,7 +55,7 @@ jobs:
             echo "PULL_SURE=$((T1-T0))" >> "$GITHUB_ENV"
             echo "YOL=pull" >> "$GITHUB_ENV"
             docker save "$UNITY_IMAGE" -o /tmp/unity-image.tar
-            echo "IMAJ_TAR_KAYDEDILDI=1" >> "$GITHUB_ENV"
+                        echo "IMAGE_SAVED=1" >> "$GITHUB_ENV"
           fi
 
       - name: Imaj dogrulama
