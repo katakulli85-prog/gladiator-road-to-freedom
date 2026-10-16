@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 // Kayit semasi v1 - versiyon numarali; yeni alanlar eklendikce SaveVersion artar
 [Serializable]
