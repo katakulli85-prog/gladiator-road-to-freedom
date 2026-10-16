@@ -1,9 +1,17 @@
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 // EditMode testler - CI'da calisir (APK gerekmez)
 public class SaveManagerTests
 {
+    // Her test temiz bir kayit klasoruyle baslar; testler birbirini etkilemez.
+    [SetUp]
+    public void SetUp() { SaveManager.DeleteAll(); }
+
+    [TearDown]
+    public void TearDown() { SaveManager.DeleteAll(); }
+
     [Test]
     public void SaveThenLoad_RoundTrip_PreservesData()
     {
@@ -28,11 +36,12 @@ public class SaveManagerTests
     public void CorruptMainFile_FallsBackToBackup()
     {
         SaveManager.Save(new GameData { Gold = 100 });
-        SaveManager.Save(new GameData { Gold = 200 });
+        SaveManager.Save(new GameData { Gold = 200 }); // main=200, backup=100
         System.IO.File.WriteAllText(SaveManager.MainPath, "{bozuk-json!");
         var loaded = SaveManager.Load();
         Assert.IsNotNull(loaded, "Bozuk main -> yedekten yuklemeli");
-        Assert.AreEqual(200, loaded.Gold, "Yedekten gelen veri son yazilan olmali");
+        // Yedek, bir onceki kayittir: 100. (Eski test 200 bekliyordu; bu mantiken imkansiz.)
+        Assert.AreEqual(100, loaded.Gold, "Bozuk main sonrasi bir onceki kayit (backup) yuklenmeli");
     }
 
     [Test]
@@ -40,7 +49,9 @@ public class SaveManagerTests
     {
         var d = new GameData { Gold = -50 }; // imkansiz: negatif altin
         SaveManager.Save(d);
+        // Load burada bilerek Debug.LogError yazar; Test Framework bunu hata saymasin.
+        LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex("Gecerli kayit bulunamadi"));
         var loaded = SaveManager.Load();
-        if (loaded != null) Assert.AreNotEqual(-50, loaded.Gold, "Negatif altin gecerli kayit olamaz");
+        Assert.IsNull(loaded, "Tek kayit gecersizse Load null donmeli");
     }
 }
