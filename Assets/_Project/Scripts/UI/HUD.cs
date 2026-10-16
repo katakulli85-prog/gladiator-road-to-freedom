@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // Savas HUD - can barlari (oyuncu + dusman)
-// Sonra: stamina bar, kombo sayaci (TUR 3-4 zaten var)
 public class HUD : MonoBehaviour
 {
     public static HUD Instance { get; private set; }
@@ -66,4 +65,3 @@ public class HUD : MonoBehaviour
             enemyNum.text = Mathf.Max(0, cur).ToString("F0");
     }
 }
-EOF
