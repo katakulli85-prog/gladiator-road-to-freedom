@@ -3,6 +3,7 @@ using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -14,10 +15,10 @@ public static class BuildCommand
 
     public static void PerformBuild()
     {
-        Directory.CreateDirectory("Assets/_Project/Scenes");
         Debug.Log("[Bootstrap] Faz1 APK derlemesi basliyor...");
         EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTarget.Android);
         ApplyPlayerSettings();
+        Directory.CreateDirectory("Assets/_Project/Scenes");
         BuildMenuScene();
         BuildArenaScene();
 
@@ -49,6 +50,18 @@ public static class BuildCommand
         PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
         PlayerSettings.allowedAutorotateToLandscapeLeft = true;
         PlayerSettings.allowedAutorotateToLandscapeRight = true;
+        PlayerSettings.Android.renderOutsideSafeArea = true;
+    }
+
+    static void EnsureEventSystem()
+    {
+        if (EventSystem.current == null)
+        {
+            var es = new GameObject("EventSystem",
+                typeof(EventSystem),
+                typeof(StandaloneInputModule));
+            Debug.Log("[UI] EventSystem olusturuldu (buton tklamalari icin)");
+        }
     }
 
     static void BuildMenuScene()
@@ -66,10 +79,12 @@ public static class BuildCommand
         scaler.referenceResolution = new Vector2(1920, 1080);
         var menuUI = canvasGO.AddComponent<MenuUI>();
 
-        MakeLabel(canvasGO.transform, "Title", "GLADIATOR", new Vector2(0.5f, 0.85f), 120, new Color(0.85f, 0.68f, 0.3f));
-        MakeLabel(canvasGO.transform, "SubTitle", "ROAD TO FREEDOM", new Vector2(0.5f, 0.76f), 48, new Color(0.75f, 0.6f, 0.35f));
-        MakeButton(canvasGO.transform, "BtnNew", "YENI OYUN", new Vector2(0.5f, 0.5f), 56, menuUI.OnNewGame);
-        MakeButton(canvasGO.transform, "BtnAbout", "HAKKINDA", new Vector2(0.5f, 0.36f), 44, menuUI.OnAbout);
+        EnsureEventSystem();
+
+        MakeLabel(canvasGO.transform, "Title", "GLADIATOR", new Vector2(0.5f, 0.80f), 110, new Color(0.85f, 0.68f, 0.3f));
+        MakeLabel(canvasGO.transform, "SubTitle", "ROAD TO FREEDOM", new Vector2(0.5f, 0.70f), 46, new Color(0.75f, 0.6f, 0.35f));
+        MakeButton(canvasGO.transform, "BtnNew", "YENI OYUN", new Vector2(0.5f, 0.46f), 54, menuUI.OnNewGame);
+        MakeButton(canvasGO.transform, "BtnAbout", "HAKKINDA", new Vector2(0.5f, 0.33f), 42, menuUI.OnAbout);
 
         var about = new GameObject("AboutPanel", typeof(Image));
         about.transform.SetParent(canvasGO.transform, false);
@@ -77,11 +92,11 @@ public static class BuildCommand
         var art = about.GetComponent<RectTransform>();
         art.anchorMin = Vector2.zero; art.anchorMax = Vector2.one;
         art.offsetMin = Vector2.zero; art.offsetMax = Vector2.zero;
-        MakeLabel(about.transform, "AboutTitle", "GLADIATOR: ROAD TO FREEDOM", new Vector2(0.5f, 0.72f), 56, Color.white);
+        MakeLabel(about.transform, "AboutTitle", "GLADIATOR: ROAD TO FREEDOM", new Vector2(0.5f, 0.72f), 52, Color.white);
         MakeLabel(about.transform, "AboutText",
             "Created by Orhan Biyik\n\nKole bir gladyator olarak basla,\n100 savasi kazanarak ozgurlugunu kazan.\n\nSurum v0.2.0 - Faz 1",
-            new Vector2(0.5f, 0.5f), 40, new Color(0.9f, 0.85f, 0.7f));
-        MakeButton(about.transform, "BtnCloseAbout", "KAPAT", new Vector2(0.5f, 0.15f), 44, menuUI.OnCloseAbout);
+            new Vector2(0.5f, 0.5f), 38, new Color(0.9f, 0.85f, 0.7f));
+        MakeButton(about.transform, "BtnCloseAbout", "KAPAT", new Vector2(0.5f, 0.15f), 42, menuUI.OnCloseAbout);
         about.SetActive(false);
 
         var flowGO = new GameObject("GameFlow", typeof(GameFlowRunner));
@@ -113,6 +128,8 @@ public static class BuildCommand
         var scaler = canvasGO.GetComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
+
+        EnsureEventSystem();
 
         MakeLabel(canvasGO.transform, "ArenaText", "ARENA - Faz 1 test sahnesi", new Vector2(0.5f, 1f), 40, Color.white);
 
