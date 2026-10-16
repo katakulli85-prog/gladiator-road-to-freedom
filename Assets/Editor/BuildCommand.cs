@@ -182,7 +182,7 @@ public static class BuildCommand
         player.AddComponent<PlayerMotor>();
         player.AddComponent<PlayerCombat>();
         var playerCollider = player.GetComponent<CapsuleCollider>();
-        if (playerCollider != null) DestroyImmediate(playerCollider, true);
+        if (playerCollider != null) UnityEditor.Object.DestroyImmediate(playerCollider, true);
 
 
         // Test hedefi
@@ -192,7 +192,7 @@ public static class BuildCommand
         dummy.GetComponent<Renderer>().sharedMaterial = MakeMat(new Color(0.5f, 0.2f, 0.2f));
         dummy.AddComponent<TestDummy>();
         var dc = dummy.GetComponent<CapsuleCollider>();
-        if (dc != null) DestroyImmediate(dc, true);
+        if (dc != null) UnityEditor.Object.DestroyImmediate(dc, true);
         dummy.AddComponent<CapsuleCollider>();
         // Takip kamerasi
         var camGO = new GameObject("Main Camera", typeof(Camera), typeof(AudioListener));
