@@ -12,13 +12,15 @@ public static class BuildCommand
     const string MenuScenePath = "Assets/_Project/Scenes/MainMenu.unity";
     const string ArenaScenePath = "Assets/_Project/Scenes/Boot.unity";
     const string ApkPath = "build/Android/Android.apk";
+    const string ManifestPath = "Assets/Plugins/Android/AndroidManifest.xml";
 
     public static void PerformBuild()
     {
         Debug.Log("[Bootstrap] Faz1 P2-P3 APK derlemesi basliyor...");
-        EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTarget.Android);
         ApplyPlayerSettings();
+        EnsureManifest();
         Directory.CreateDirectory("Assets/_Project/Scenes");
+        Directory.CreateDirectory("build/Android");
         BuildMenuScene();
         BuildArenaScene();
 
@@ -27,7 +29,6 @@ public static class BuildCommand
             new EditorBuildSettingsScene(ArenaScenePath, true)
         };
 
-        Directory.CreateDirectory("build/Android");
         var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
         {
             scenes = new[] { MenuScenePath, ArenaScenePath },
@@ -56,6 +57,30 @@ public static class BuildCommand
         PlayerSettings.allowedAutorotateToLandscapeLeft = true;
         PlayerSettings.allowedAutorotateToLandscapeRight = true;
         PlayerSettings.Android.renderOutsideSafeArea = true;
+    }
+
+    static void EnsureManifest()
+    {
+        Directory.CreateDirectory("Assets/Plugins/Android");
+        string manifest = @"<?xml version=""1.0"" encoding=""utf-8""?>
+<manifest xmlns:android=""http://schemas.android.com/apk/res/android"">
+    <uses-permission android:name=""android.permission.VIBRATE"" />
+    <uses-permission android:name=""android.permission.INTERNET"" />
+    <application>
+        <activity android:name=""com.unity3d.player.UnityPlayerActivity""
+                  android:screenOrientation=""sensorLandscape""
+                  android:configChanges=""orientation|screenSize|screenLayout|keyboardHidden""
+                  android:theme=""@style/UnityThemeSelector"">
+            <intent-filter>
+                <action android:name=""android.intent.action.MAIN"" />
+                <category android:name=""android.intent.category.LAUNCHER"" />
+            </intent-filter>
+            <meta-data android:name=""unityplayer.UnityActivity"" android:value=""true"" />
+        </activity>
+    </application>
+</manifest>";
+        File.WriteAllText(ManifestPath, manifest);
+        Debug.Log("[Bootstrap] AndroidManifest uretildi (sensorLandscape garanti)");
     }
 
     static void EnsureEventSystem()
@@ -153,7 +178,6 @@ public static class BuildCommand
         var menuUI = canvasGO.AddComponent<MenuUI>();
 
         EnsureEventSystem();
-        canvasGO.AddComponent<ArenaUI>();
 
         MakeLabel(canvasGO.transform, "Title", "GLADIATOR", new Vector2(0.5f, 0.80f), 110, new Color(0.85f, 0.68f, 0.3f));
         MakeLabel(canvasGO.transform, "SubTitle", "ROAD TO FREEDOM", new Vector2(0.5f, 0.70f), 46, new Color(0.75f, 0.6f, 0.35f));
@@ -162,7 +186,7 @@ public static class BuildCommand
 
         var about = MakePanel(canvasGO.transform, "AboutPanel",
             "GLADIATOR: ROAD TO FREEDOM",
-            "Created by Orhan Biyik\n\nKole bir gladyator olarak basla,\n100 savasi kazanarak ozgurlugunu kazan.\n\nSurum v0.5.0 - Faz 1 P2-P3");
+            "Kole bir gladyator olarak arenaya adim at.\n100 savasi kazan, ozgurlugune ulas.\n\nRoma'dan bozkirlara arenalar,\nkilic, mizrak, kalkan ve zirhlar.\n\nCreated by Orhan Biyik\n(c) 2026 Orhan Biyik\nSurum v0.5.0");
         MakeButton(about.transform, "BtnCloseAbout", "KAPAT", new Vector2(0.5f, 0.15f), 42, menuUI.OnCloseAbout);
 
         var flowGO = new GameObject("GameFlow", typeof(GameFlowRunner));
@@ -178,71 +202,12 @@ public static class BuildCommand
         var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
         ground.name = "Ground";
         ground.transform.localScale = new Vector3(8f, 1f, 8f);
-        ground.GetComponent<Renderer>().sharedMaterial = MakeMat(new Color(0.85f, 0.72f, 0.55f));
-        ground.transform.localScale = new Vector3(10f, 1f, 10f);
-
-        // Arena duvarlari (4 yon - basit ama atmosferik)
-        for (int i = 0; i < 4; i++)
-        {
-            var wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            wall.name = "ArenaWall_" + i;
-            wall.transform.SetParent(ground.transform.parent, false);
-            float sz = 40f;
-            if (i == 0) { wall.transform.position = new Vector3(0, 3, 15f); wall.transform.localScale = new Vector3(sz, 6, 1); }
-            if (i == 1) { wall.transform.position = new Vector3(0, 3, -15f); wall.transform.localScale = new Vector3(sz, 6, 1); }
-            if (i == 2) { wall.transform.position = new Vector3(15f, 3, 0); wall.transform.localScale = new Vector3(1, 6, sz); }
-            if (i == 3) { wall.transform.position = new Vector3(-15f, 3, 0); wall.transform.localScale = new Vector3(1, 6, sz); }
-            wall.GetComponent<Renderer>().sharedMaterial = MakeMat(new Color(0.45f, 0.35f, 0.25f));
-        }
-
-        // 4 meşale ışığı (arena köşelerinde, sıcak turuncu)
-        for (int i = 0; i < 4; i++)
-        {
-            var torch = new GameObject("Torch_" + i, typeof(Light));
-            torch.GetComponent<Light>().type = LightType.Point;
-            torch.GetComponent<Light>().color = new Color(1f, 0.55f, 0.2f);
-            torch.GetComponent<Light>().intensity = 1.8f;
-            torch.GetComponent<Light>().range = 12f;
-            float tx = (i == 0 || i == 2) ? 12f : -12f;
-            float tz = (i < 2) ? 12f : -12f;
-            torch.transform.position = new Vector3(tx, 4f, tz);
-        }
-
-        // Toz partiküllerini simüle etmek için küçük yarı saydam küpler
-        for (int i = 0; i < 20; i++)
-        {
-            var dust = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            dust.name = "Dust_" + i;
-            dust.transform.SetParent(ground.transform.parent, false);
-            dust.transform.position = new Vector3(
-                Random.Range(-14f, 14f), Random.Range(0.5f, 6f), Random.Range(-14f, 14f));
-            float dsz = Random.Range(0.05f, 0.2f);
-            dust.transform.localScale = new Vector3(dsz, dsz, dsz);
-            dust.GetComponent<Renderer>().sharedMaterial = MakeMat(new Color(0.9f, 0.8f, 0.6f, 0.3f));
-            Object.DestroyImmediate(dust.GetComponent<Collider>(), true);
-        }
+        ground.GetComponent<Renderer>().sharedMaterial = MakeMat(new Color(0.72f, 0.63f, 0.47f));
 
         var player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
         player.name = "Player";
         player.transform.position = new Vector3(0f, 1f, 0f);
-        player.GetComponent<Renderer>().sharedMaterial = MakeMat(new Color(0.6f, 0.45f, 0.3f));
-
-        // Gladyator görünümü: kalkan + kılıç (çocuk parçalar)
-        var shield = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        shield.name = "Shield";
-        shield.transform.SetParent(player.transform, false);
-        shield.transform.localPosition = new Vector3(-0.55f, 0.1f, 0.2f);
-        shield.transform.localScale = new Vector3(0.15f, 0.7f, 0.7f);
-        shield.GetComponent<Renderer>().sharedMaterial = MakeMat(new Color(0.5f, 0.4f, 0.25f));
-        Object.DestroyImmediate(shield.GetComponent<Collider>(), true);
-
-        var sword = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        sword.name = "Sword";
-        sword.transform.SetParent(player.transform, false);
-        sword.transform.localPosition = new Vector3(0.55f, 0.3f, 0.3f);
-        sword.transform.localScale = new Vector3(0.08f, 0.08f, 1.2f);
-        sword.GetComponent<Renderer>().sharedMaterial = MakeMat(new Color(0.75f, 0.75f, 0.8f));
-        Object.DestroyImmediate(sword.GetComponent<Collider>(), true);
+        player.GetComponent<Renderer>().sharedMaterial = MakeMat(new Color(0.75f, 0.55f, 0.35f));
         var pc = player.GetComponent<CapsuleCollider>();
         if (pc != null) UnityEngine.Object.DestroyImmediate(pc, true);
         player.AddComponent<CharacterController>();
@@ -276,6 +241,7 @@ public static class BuildCommand
         scaler.referenceResolution = new Vector2(1920, 1080);
 
         EnsureEventSystem();
+        canvasGO.AddComponent<ArenaUI>();
 
         var hudGO = new GameObject("HUD", typeof(HUD));
         var hud = hudGO.GetComponent<HUD>();
@@ -347,38 +313,25 @@ public static class BuildCommand
 
         var victory = MakePanel(canvasGO.transform, "VictoryPanel", "ZAFER",
             "Dusmani yendin!\nIlk duello tamam.");
-        eai.victoryPanel = victory;
         MakeButton(victory.transform, "BtnRetry", "TEKRAR", new Vector2(0.5f, 0.3f), 40,
             () => SceneManager.LoadScene(1));
 
         var defeat = MakePanel(canvasGO.transform, "DefeatPanel", "YENILGI",
             "Dustun... ama ayaga kalk.\n\nYuz kez dustum, yuz kez kalktim.");
-        phealth.defeatPanel = defeat;
         MakeButton(defeat.transform, "BtnRetryD", "TEKRAR", new Vector2(0.5f, 0.3f), 40,
             () => SceneManager.LoadScene(1));
         MakeButton(defeat.transform, "BtnMenuD", "MENU", new Vector2(0.5f, 0.18f), 36,
             () => SceneManager.LoadScene(0));
 
+        victory.name = "VictoryPanel";
+        defeat.name = "DefeatPanel";
+        var enemyComp = enemy.GetComponent<EnemyAI>();
+        enemyComp.victoryPanel = victory;
+
+        var playerHealth = player.GetComponent<PlayerHealth>();
+        playerHealth.defeatPanel = defeat;
+
         EditorSceneManager.SaveScene(scene, ArenaScenePath);
-        Debug.Log("[Flow] Arena sahnesi: HUD + dusman AI + paneller tamam");
+        Debug.Log("[Flow] Arena sahnesi: HUD + dusman AI + paneller + PARRY + kamera omuz + 0.9 isik + denge 7dmg/1.6sn tamam");
     }
 }
-        Directory.CreateDirectory("Assets/Plugins/Android");
-        System.IO.File.WriteAllText("Assets/Plugins/Android/AndroidManifest.xml",
-            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
-            "<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\">\n" +
-            "    <uses-permission android:name=\"android.permission.VIBRATE\" />\n" +
-            "    <uses-permission android:name=\"android.permission.INTERNET\" />\n" +
-            "    <application>\n" +
-            "        <activity android:name=\"com.unity3d.player.UnityPlayerActivity\"\n" +
-            "                  android:screenOrientation=\"sensorLandscape\"\n" +
-            "                  android:configChanges=\"orientation|screenSize|screenLayout|keyboardHidden\"\n" +
-            "                  android:theme=\"@style/UnityThemeSelector\">\n" +
-            "            <intent-filter>\n" +
-            "                <action android:name=\"android.intent.action.MAIN\" />\n" +
-            "                <category android:name=\"android.intent.category.LAUNCHER\" />\n" +
-            "            </intent-filter>\n" +
-            "            <meta-data android:name=\"unityplayer.UnityActivity\" android:value=\"true\" />\n" +
-            "        </activity>\n" +
-            "    </application>\n" +
-            "</manifest>");
