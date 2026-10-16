@@ -1,0 +1,85 @@
+set -e
+echo "== EDITMODE TEST WORKFLOW EKLENIYOR =="
+cd /workspaces/gladiator-road-to-freedom || { echo "HATA: repo yok"; exit 1; }
+git pull --ff-only
+
+cat > .github/workflows/editmode-tests.yml <<'EOF_ET'
+name: "4) EditMode Testler (APK yok)"
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  UNITY_VERSION: 2022.3.55f1
+  UNITY_IMAGE: unityci/editor:ubuntu-2022.3.55f1-linux-il2cpp-1
+
+jobs:
+  editmode:
+    name: Kayit/Ayar testleri
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Disk boslugu ac
+        run: |
+          sudo swapoff -a || true
+          sudo rm -f /swapfile
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/lib/jvm /opt/hostedtoolcache 2>/dev/null || true
+          sudo docker image prune -af >/dev/null 2>&1 || true
+          df -h / | tail -1
+
+      - uses: actions/checkout@v4
+
+      - name: Secret kontrolu
+        env:
+          U: ${{ secrets.UNITY_EMAIL }}
+          P: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          if [ -z "$U" ] || [ -z "$P" ]; then
+            echo "::error::Secrets eksik - test calistirilamayacak (duruşturucu)"
+            exit 1
+          fi
+          echo "Secretlar OK (gizli)"
+
+      - name: Unity EditMode testleri (gercek kosu)
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          docker run --rm \
+            -v "$PWD":/project -w /project \
+            -e UNITY_EMAIL -e UNITY_PASSWORD \
+            "unityci/editor:ubuntu-${{ env.UNITY_VERSION }}-base-3" bash -c '
+              LC="/opt/unity/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client"
+              xvfb-run -ae /dev/stdout "$LC" --activate-all --include-personal \
+                --username "$UNITY_EMAIL" --password "$UNITY_PASSWORD" || true
+              xvfb-run -ae /dev/stdout /opt/unity/Editor/Unity -batchmode -nographics \
+                -projectPath /project \
+                -runTests -testPlatform EditMode \
+                -testResults /project/test-results.xml \
+                -logFile /tmp/test.log
+              RC=$?
+              echo "TEST_EXIT=$RC"
+              echo "=== TEST SONUC SATIRLARI ==="
+              grep -iE "test|passed|failed" /tmp/test.log | tail -n 25 || true
+              exit $RC
+            '
+
+      - name: Test sonuclari artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: editmode-test-results
+          path: test-results.xml
+          retention-days: 14
+          if-no-files-found: ignore
+EOF_ET
+
+echo "--- DOGRULAMA ---"
+echo "editmode-tests.yml: $(test -f .github/workflows/editmode-tests.yml && echo VAR || echo YOK)"
+
+git add -A
+git commit -m "EditMode test workflow: her push'ta kayit testleri otomatik (APK yok)"
+git push && echo "PUSH OK"
+echo "== EDITMODE TEST SISTEMI KURULDU =="
