@@ -1,0 +1,70 @@
+name: "3) Kod Kontrolu (APK yok)"
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  UNITY_VERSION: 2022.3.55f1
+  UNITY_IMAGE: unityci/editor:ubuntu-2022.3.55f1-android-3
+
+jobs:
+  compile-check:
+    name: Unity derleme kontrolu
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Disk boslugu ac
+        run: |
+          sudo swapoff -a || true
+          sudo rm -f /swapfile
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/lib/jvm /opt/hostedtoolcache 2>/dev/null || true
+          sudo docker image prune -af >/dev/null 2>&1 || true
+          df -h / | tail -1
+
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+
+      - name: Library cache
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: ci-check-Library-${{ hashFiles('Packages/manifest.json', 'ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: |
+            ci-check-Library-
+            gladiator-Library-Android-
+
+      - name: Secret kontrolu
+        env:
+          U: ${{ secrets.UNITY_EMAIL }}
+          P: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          if [ -z "$U" ] || [ -z "$P" ]; then
+            echo "::error::Secrets eksik"
+            exit 1
+          fi
+          echo "Secretlar OK (gizli)"
+
+      - name: Unity derleme kontrolu (APK uretmeden)
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          docker run --rm \
+            -v "$PWD":/project -w /project \
+            -e UNITY_EMAIL -e UNITY_PASSWORD \
+            "$UNITY_IMAGE" bash -c '
+              LC="/opt/unity/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client"
+              xvfb-run -ae /dev/stdout "$LC" --activate-all --include-personal \
+                --username "$UNITY_EMAIL" --password "$UNITY_PASSWORD" || true
+              xvfb-run -ae /dev/stdout /opt/unity/Editor/Unity -batchmode -nographics -quit \
+                -projectPath /project \
+                -executeMethod EditorCheck.RunCheck \
+                -logFile /tmp/check.log
+              RC=$?
+              echo "CHECK_EXIT=$RC"
+              grep -iE "error|exception" /tmp/check.log | head -n 30 || echo "hata yok"
+              tail -n 20 /tmp/check.log 2>/dev/null || true
+              exit $RC
+            '
