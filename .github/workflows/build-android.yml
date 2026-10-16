@@ -13,20 +13,40 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - name: Disk boslugu ac
-        run: |
-          echo "ONCE:"; df -h / | tail -1
-          sudo swapoff -a || true
-          sudo rm -f /swapfile
-          sudo rm -rf /usr/share/dotnet /usr/share/swift /usr/share/miniconda /usr/local/lib/android /opt/ghc /usr/local/share/boost /usr/lib/jvm /opt/hostedtoolcache 2>/dev/null || true
-          sudo docker image prune -af >/dev/null 2>&1 || true
-          sudo apt-get clean >/dev/null 2>&1 || true
-          echo "SONRA:"; df -h / | tail -1
+      - name: Sure olcumu baslangic
+        run: echo "BUILD_START=$(date +%s)" >> "$GITHUB_ENV"
 
       - name: Depoyu al
         uses: actions/checkout@v4
 
-      - name: Library cache (hizlandirma)
+      - name: Docker imaj cache (diger katmanlar)
+        uses: actions/cache@v4
+        with:
+          path: /var/lib/docker
+          key: docker-unity-image-${{ env.UNITY_IMAGE }}-v1
+          restore-keys: |
+            docker-unity-image-
+
+      - name: Disk durumu ONCE (olcum)
+        run: |
+          echo "=== TEMIZLIK ONCESI ==="
+          df -h / | tail -1
+          sudo du -sh /usr/share/* 2>/dev/null | sort -rh | head -5 || true
+
+      - name: Disk boslugu ac (olcumlu, guvenli liste)
+        run: |
+          sudo swapoff -a || true
+          sudo rm -f /swapfile
+          sudo rm -rf /usr/share/dotnet /usr/share/swift /usr/share/miniconda /opt/ghc /opt/hostedtoolcache 2>/dev/null || true
+          echo "=== TEMIZLIK SONRASI ==="
+          df -h / | tail -1
+
+      - name: Depoyu al (tekrar - temizlik sonrasi garanti)
+        uses: actions/checkout@v4
+        with:
+          clean: false
+
+      - name: Library cache
         uses: actions/cache@v4
         with:
           path: Library
@@ -40,30 +60,33 @@ jobs:
           P: ${{ secrets.UNITY_PASSWORD }}
         run: |
           if [ -z "$U" ] || [ -z "$P" ]; then
-            echo "::error::UNITY_EMAIL ve/veya UNITY_PASSWORD eksik."
+            echo "::error::Secrets eksik"
             exit 1
           fi
-          echo "Secretlar mevcut (degerler gizli)."
 
-      - name: Imaji cek
-        run: docker pull "$UNITY_IMAGE"
+      - name: Imaji cek (sure olcumlu)
+        run: |
+          PULL_START=$(date +%s)
+          docker pull "$UNITY_IMAGE"
+          PULL_END=$(date +%s)
+          echo "PULL_SURE=$((PULL_END - PULL_START)) saniye" >> "$GITHUB_STEP_SUMMARY"
+          echo "Imaj cekme: $((PULL_END - PULL_START)) saniye"
 
-      - name: Personal lisans al + APK derle (tek container)
+      - name: Personal lisans + APK derle
         env:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         run: |
-          set -e
+          BUILD_START=$(date +%s)
           docker run --rm \
             -v "$PWD":/project -w /project \
             -e UNITY_EMAIL -e UNITY_PASSWORD \
             "$UNITY_IMAGE" bash -c '
               LC="/opt/unity/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client"
-              echo "=== 1/3: PERSONAL LISANS ALINIYOR ==="
+              echo "=== 1/3: LISANS ==="
               xvfb-run -ae /dev/stdout "$LC" --activate-all --include-personal \
                 --username "$UNITY_EMAIL" --password "$UNITY_PASSWORD"
-              echo "=== 2/3: LISANS KONTROLU ==="
-              ls /root/.config/unity3d/ 2>/dev/null || true
+              echo "=== 2/3: IMPORT KONTROL ==="
               echo "=== 3/3: APK DERLENIYOR ==="
               xvfb-run -ae /dev/stdout /opt/unity/Editor/Unity -batchmode -nographics -quit \
                 -projectPath /project \
@@ -71,23 +94,14 @@ jobs:
                 -logFile /project/build.log
               RC=$?
               echo "BUILD_EXIT=$RC"
-              echo "=== LOGERROR CONTEXT ==="
-              grep -B3 -A8 "LogError" /project/build.log | head -n 60 || echo "LogError yok"
-              echo "=== HATA SATIRLARI (harf duyarsiz) ==="
-              grep -iE "error|exception|abort|fail" /project/build.log | head -n 40 || echo "yok"
+              echo "=== HATA SATIRLARI ==="
+              grep -iE "error|exception|abort|fail" /project/build.log | head -n 40 || echo "hata yok"
               echo "=== BOOTSTRAP RAPOR ==="
-              grep -E "\[Bootstrap\]|\[Flow\]|\[Arena\]" /project/build.log || true
+              grep -E "\[Bootstrap\]|\[Flow\]" /project/build.log || true
               exit $RC
             '
-
-      - name: Tam build.log artifact (her durumda)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: unity-build-log
-          path: build.log
-          retention-days: 7
-          if-no-files-found: ignore
+          BUILD_END=$(date +%s)
+          echo "UNITY_SURE=$((BUILD_END - BUILD_START)) saniye" >> "$GITHUB_STEP_SUMMARY"
 
       - name: APK artifact yukle
         uses: actions/upload-artifact@v4
@@ -97,7 +111,23 @@ jobs:
           retention-days: 14
           if-no-files-found: error
 
-      - name: Ozet
+      - name: Sure raporu
         run: |
-          echo "## APK hazir" >> "$GITHUB_STEP_SUMMARY"
-          ls -lh build/Android/ >> "$GITHUB_STEP_SUMMARY" || true
+          BUILD_END=$(date +%s)
+          TOTAL=$((BUILD_END - BUILD_START))
+          echo "## Sure Raporu" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Toplam koşu: ${TOTAL} saniye" >> "$GITHUB_STEP_SUMMARY"
+          echo "- PULL_SURE ve UNITY_SURE detayları yukarıda" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: AndroidJNI modulu dogrulama (regresyon testi)
+        run: |
+          if ! grep -q "com.unity.modules.androidjni" Packages/manifest.json; then
+            echo "::error::AndroidJNI modulu eksik - regresyon!"
+            exit 1
+          fi
+          echo "AndroidJNI modulu: VAR ✓ (regresyon yok)"
+          if ! grep -q "com.unity.modules.physics" Packages/manifest.json; then
+            echo "::error::Physics modulu eksik - regresyon!"
+            exit 1
+          fi
+          echo "Physics modulu: VAR ✓ (regresyon yok)"
