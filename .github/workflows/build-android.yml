@@ -71,7 +71,10 @@ jobs:
                 -logFile /tmp/build.log
               RC=$?
               echo "BUILD_EXIT=$RC"
-              tail -n 20 /tmp/build.log 2>/dev/null || true
+              echo "=== HATA SATIRLARI ==="
+              grep -E "error|Exception|Aborting" /tmp/build.log | head -n 30 || echo "hata satiri bulunamadi"
+              echo "=== LOG SON 40 SATIR ==="
+              tail -n 40 /tmp/build.log 2>/dev/null || true
               exit $RC
             '
 
